@@ -33,7 +33,8 @@ RAIZ = Path(__file__).resolve().parent.parent
 URL_TOKEN = "https://github.com/settings/tokens/new?scopes=repo&description=Mi%20Centro%20de%20Control"
 
 CARPETAS_EXCLUIDAS = {".git", ".venv", "__pycache__", ".pytest_cache", ".vercel", ".claude", "respaldos", "fixtures_privados"}
-ARCHIVOS_EXCLUIDOS = [".env", ".env.*", "*.db", "*.db-journal", "credenciales_qr.svg", "*.pyc"]
+ARCHIVOS_EXCLUIDOS = [".env", ".env.*", "*.db", "*.db-journal", "credenciales_qr.svg", "*.pyc",
+                      "*.log", "produccion_url.txt"]
 PERMITIDOS = {".env.example"}
 # Si algún archivo contiene esto, no se sube nada
 PATRONES_SECRETOS = [
@@ -108,6 +109,13 @@ def api(metodo: str, ruta: str, token: str, cuerpo: dict | None = None):
         return error.code, json.loads(error.read() or b"{}"), error.headers
 
 
+PUBLICO = "--publico" in sys.argv
+DESCRIPCION = ("Mobile-first personal finance & goals app (FastAPI, HTMX, PostgreSQL/Neon, Vercel) · "
+               "App personal de finanzas y metas")
+TEMAS = ["fastapi", "htmx", "python", "postgresql", "neon", "vercel", "sqlalchemy", "alembic", "chartjs",
+         "personal-finance", "pytest", "portfolio"]
+
+
 def publicar(token: str, decir) -> None:
     estado, yo, cabeceras = api("GET", "/user", token)
     if estado != 200:
@@ -132,11 +140,20 @@ def publicar(token: str, decir) -> None:
     porcelain.push(str(RAIZ), f"https://github.com/{DUENO}/{REPO}.git", "refs/heads/main",
                    username=DUENO, password=token)
 
-    decir("3/3 Comprobando…")
+    if PUBLICO:
+        decir("3/3 Haciendo público el repositorio para el portafolio…")
+        estado, cuerpo, _ = api("PATCH", f"/repos/{DUENO}/{REPO}", token, {"private": False, "description": DESCRIPCION})
+        if estado != 200:
+            return decir(f"No se pudo hacer público (HTTP {estado}): {cuerpo.get('message')}", True)
+        api("PUT", f"/repos/{DUENO}/{REPO}/topics", token, {"names": TEMAS})
+    else:
+        decir("3/3 Comprobando…")
     estado, info, _ = api("GET", f"/repos/{DUENO}/{REPO}", token)
-    if estado != 200 or not info.get("private"):
-        return decir(f"ATENCIÓN: el repositorio no figura como privado (HTTP {estado}). Revísalo en GitHub.", True)
-    decir(f"LISTO: https://github.com/{DUENO}/{REPO} (privado).\nYa puedes cerrar esta ventana.", done=True)
+    if estado != 200 or bool(info.get("private")) == PUBLICO:
+        visibilidad = "público" if PUBLICO else "privado"
+        return decir(f"ATENCIÓN: el repositorio no figura como {visibilidad} (HTTP {estado}). Revísalo en GitHub.", True)
+    visibilidad = "público" if PUBLICO else "privado"
+    decir(f"LISTO: https://github.com/{DUENO}/{REPO} ({visibilidad}).\nYa puedes cerrar esta ventana.", done=True)
 
 
 def ventana_token() -> None:
@@ -144,8 +161,9 @@ def ventana_token() -> None:
     raiz.title("Subir Mi Centro de Control a GitHub")
     raiz.attributes("-topmost", True)
     raiz.geometry("600x280")
-    tk.Label(raiz, text=f"Se subirá el código al repositorio PRIVADO {DUENO}/{REPO}.",
-             font=("Segoe UI", 10, "bold")).pack(pady=(14, 6))
+    aviso = (f"Se subirá el código y el repositorio {DUENO}/{REPO} quedará PÚBLICO (portafolio)."
+             if PUBLICO else f"Se subirá el código al repositorio PRIVADO {DUENO}/{REPO}.")
+    tk.Label(raiz, text=aviso, font=("Segoe UI", 10, "bold")).pack(pady=(14, 6))
     tk.Label(raiz, text="Pega tu token de GitHub (empieza por ghp_) y pulsa Subir:", font=("Segoe UI", 10)).pack()
     campo = tk.Entry(raiz, show="*", width=58, font=("Segoe UI", 10))
     campo.pack(pady=6)

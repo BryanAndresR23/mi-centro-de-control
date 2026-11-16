@@ -6,7 +6,7 @@ Aprobado el 16 de noviembre de 2026.
 
 | Tema | Decisión |
 |---|---|
-| Carpeta | `C:\Users\bromo\Proyectos\mi-centro-de-control` |
+| Desarrollo | Carpeta propia, separada de cualquier proyecto de trabajo |
 | Hosting | Nube con planes gratuitos: Vercel (Hobby) + PostgreSQL en Neon |
 | Lectura de fotos | Claude Opus 5.5, cambiable con una variable de entorno |
 | Recordatorios | Bot de Telegram, resumen diario cerca de las 7:00 (Quito) |
@@ -53,7 +53,7 @@ Neon PostgreSQL (datos + fotos comprimidas)
 
 | Fase | Contenido | Estado |
 |---|---|---|
-| 1a | Login con 2FA, cuentas, categorías, movimientos, transferencias y ahorros, dashboard, respaldo, datos de ejemplo, despliegue | **Hecha**, publicada en https://mi-centro-de-control.vercel.app |
+| 1a | Login con 2FA, cuentas, categorías, movimientos, transferencias y ahorros, dashboard, respaldo, datos de ejemplo, despliegue | **Hecha** y en producción (Vercel + Neon, uso personal) |
 | 1b | Presupuestos (alertas al 80 % y al 100 %), metas de ahorro, deudas y suscripciones, dashboard completo | Pendiente |
 | 2 | Fotos de recibos (sueltas o en lote) con Claude, XML del SRI, importación CSV/Excel con detección de duplicados | Pendiente |
 | 3 | Áreas con sus plantillas (trabajo, fitness, inglés, SQL, postulaciones, becas, metas), vista Hoy | Pendiente |

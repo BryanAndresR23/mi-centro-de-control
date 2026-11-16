@@ -81,6 +81,10 @@ def inicio(request: Request, mes: str | None = None, bd: Session = Depends(obten
     # Tendencia de 12 meses y patrimonio al cierre de cada mes
     meses = meses_hasta(anio, num_mes, MESES_TENDENCIA)
     serie = serie_mensual(movs, meses)
+    # Los meses anteriores al primer registro no se grafican (una caída a $0 confundiría)
+    primero_con_datos = next((i for i, r in enumerate(serie) if r.ingresos or r.gastos), None)
+    if primero_con_datos:
+        meses, serie = meses[primero_con_datos:], serie[primero_con_datos:]
     patrimonio_mensual = serie_patrimonio(cuentas_calc, movs, meses, hoy_)
     etiquetas = [f"{MESES_CORTOS[m - 1]} {str(a)[2:]}" for a, m in meses]
     graficos = {

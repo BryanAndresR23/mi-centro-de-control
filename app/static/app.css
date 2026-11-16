@@ -358,7 +358,7 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 /* --- Formularios -------------------------------------------------------- */
 
 .formulario { display: grid; gap: 16px; }
-.campo { display: grid; gap: 6px; min-width: 0; }
+.campo { display: grid; gap: 6px; min-width: 0; align-content: start; }
 .campo > label, .campo > .rotulo { font-size: 0.875rem; font-weight: 600; color: var(--texto-2); }
 .campo .ayuda { font-size: 0.8rem; color: var(--texto-2); }
 .campo .error { font-size: 0.825rem; color: var(--malo); font-weight: 500; }
