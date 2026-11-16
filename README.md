@@ -95,6 +95,32 @@ tests/               pytest
 
 ## Publicar en internet (Neon + GitHub + Vercel)
 
+**En producción:** <https://mi-centro-de-control.vercel.app>, publicada el 16 de noviembre de 2026.
+
+### Vía rápida (la que se usó): `scripts\configurar_vercel.py`
+
+```powershell
+.\.venv\Scripts\python.exe scripts\configurar_vercel.py
+```
+
+Abre una ventana donde:
+1. Pegas un token de Vercel.
+2. Pegas la cadena de conexión de Neon.
+3. Escribes tu contraseña y escaneas un QR nuevo de Google Authenticator.
+
+La ventana se encarga del resto:
+- Crea o reutiliza el proyecto ligado a tu repo de GitHub.
+- Guarda las 6 variables cifradas. La URL directa para las migraciones la deriva de la de Neon.
+- Despliega a producción.
+
+Los secretos van directo de la ventana a Vercel. No se guardan en disco y no aparecen en
+`configurar_vercel.log`, que solo anota los pasos.
+
+Sirve también para **cambiar la contraseña o el 2FA**: vuelve a ejecutarla. `SECRET_KEY` cambia, así que se
+cierran las sesiones abiertas. **No compartas capturas de la ventana mientras se ve el QR.**
+
+### Vía manual (panel de Vercel)
+
 Todo es gratis. Las cuentas las creas tú.
 
 1. **Neon** (<https://neon.tech>): crea un proyecto en la región *AWS US East (N. Virginia)*, que es la misma

@@ -4,6 +4,8 @@
 .env.*
 !.env.example
 credenciales_qr.svg
+configurar_vercel.log
+produccion_url.txt
 
 # Datos locales
 *.db

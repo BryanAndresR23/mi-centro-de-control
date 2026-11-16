@@ -53,7 +53,7 @@ Neon PostgreSQL (datos + fotos comprimidas)
 
 | Fase | Contenido | Estado |
 |---|---|---|
-| 1a | Login con 2FA, cuentas, categorías, movimientos, transferencias y ahorros, dashboard, respaldo, datos de ejemplo, despliegue | **Hecha** (el despliegue espera tus cuentas de Neon, GitHub y Vercel) |
+| 1a | Login con 2FA, cuentas, categorías, movimientos, transferencias y ahorros, dashboard, respaldo, datos de ejemplo, despliegue | **Hecha**, publicada en https://mi-centro-de-control.vercel.app |
 | 1b | Presupuestos (alertas al 80 % y al 100 %), metas de ahorro, deudas y suscripciones, dashboard completo | Pendiente |
 | 2 | Fotos de recibos (sueltas o en lote) con Claude, XML del SRI, importación CSV/Excel con detección de duplicados | Pendiente |
 | 3 | Áreas con sus plantillas (trabajo, fitness, inglés, SQL, postulaciones, becas, metas), vista Hoy | Pendiente |
