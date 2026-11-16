@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block titulo %}Respaldo · Mi Centro de Control{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <h1>Respaldo</h1>
+  <a class="boton boton-sec boton-chico" href="/mas">Volver</a>
+</div>
+
+<section class="tarjeta formulario">
+  <h2>Descargar respaldo</h2>
+  <p>Un ZIP con todo: <code>datos.json</code> (para restaurar) y un CSV por tabla (para Excel o Power BI).
+     Guárdalo en un lugar seguro: contiene toda tu información financiera.</p>
+  <table>
+    <thead><tr><th>Tabla</th><th class="num">Registros</th></tr></thead>
+    <tbody>{% for nombre, total in conteos.items() %}<tr><td>{{ nombre }}</td><td class="num">{{ total }}</td></tr>{% endfor %}</tbody>
+  </table>
+  <div class="acciones"><a class="boton" href="/respaldo/descargar">Descargar ZIP</a></div>
+</section>
+
+<section class="tarjeta">
+  <h2>Restaurar</h2>
+  <form method="post" action="/respaldo/restaurar" enctype="multipart/form-data" class="formulario" style="margin-top: 12px"
+        data-confirmar="Se borrarán TODOS los datos actuales y se reemplazarán por los del respaldo. ¿Continuar?">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}">
+    {% if error %}<div class="aviso aviso-error" role="alert">{{ error }}</div>{% endif %}
+    <p class="sutil">Reemplaza <b>todos</b> los datos actuales por los del respaldo. Antes, descarga un respaldo de lo que tienes ahora.</p>
+    <div class="campo">
+      <label for="archivo">Archivo de respaldo (.zip o .json)</label>
+      <input id="archivo" name="archivo" type="file" accept=".zip,.json,application/zip,application/json">
+    </div>
+    <div class="campo">
+      <label for="confirmacion">Escribe REEMPLAZAR para confirmar</label>
+      <input id="confirmacion" name="confirmacion" type="text" autocomplete="off" autocapitalize="characters">
+    </div>
+    <div class="acciones"><button class="boton boton-peligro" type="submit">Restaurar respaldo</button></div>
+  </form>
+</section>
+{% endblock %}

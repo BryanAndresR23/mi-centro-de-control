@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% from "_macros.html" import error, clase_campo %}
+{% block titulo %}{{ 'Editar movimiento' if movimiento else 'Nuevo movimiento' }} · Mi Centro de Control{% endblock %}
+{% block contenido %}
+{% set tipo = valores.tipo or 'gasto' %}
+<div class="encabezado">
+  <h1>{{ 'Editar movimiento' if movimiento else 'Nuevo movimiento' }}</h1>
+  <a class="boton boton-sec boton-chico" href="{{ '/movimientos?mes=' ~ movimiento.fecha.strftime('%Y-%m') if movimiento else '/movimientos' }}">Cancelar</a>
+</div>
+
+{% if not cuentas %}
+<section class="tarjeta vacio">
+  <p>Primero crea una cuenta (efectivo, banco o tarjeta) para registrar movimientos.</p>
+  <a class="boton" href="/cuentas/nueva">Crear cuenta</a>
+</section>
+{% else %}
+<form method="post" class="tarjeta formulario form-mov" data-tipo="{{ tipo }}" data-editando="{{ '1' if movimiento else '0' }}" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}">
+
+  <fieldset class="segmento" role="radiogroup" aria-label="Tipo de movimiento" style="border:0; margin:0;">
+    {% for clave in ('gasto', 'ingreso', 'transferencia', 'ahorro') %}
+      <label><input type="radio" name="tipo" value="{{ clave }}" {{ 'checked' if tipo == clave }}><span>{{ titulos[clave] }}</span></label>
+    {% endfor %}
+  </fieldset>
+  {{ error(errores, 'tipo') }}
+
+  <div class="{{ clase_campo(errores, 'monto') }}">
+    <label for="monto">Monto (USD)</label>
+    <input id="monto" name="monto" class="monto-grande" type="text" inputmode="decimal" autocomplete="off"
+           placeholder="0.00" value="{{ valores.monto or '' }}" {{ 'autofocus' if not movimiento }}
+           aria-describedby="error-monto">
+    {{ error(errores, 'monto') }}
+  </div>
+
+  {# Categoría de gasto #}
+  <div class="{{ clase_campo(errores, 'categoria_gasto') }} solo-gasto">
+    <label for="categoria_gasto">Categoría</label>
+    {% if frecuentes_gasto %}
+    <div class="chips">
+      {% for c in frecuentes_gasto %}<button type="button" class="chip" data-chip-categoria="{{ c.id }}" data-campo="categoria_gasto">{{ c.etiqueta }}</button>{% endfor %}
+    </div>
+    {% endif %}
+    <select id="categoria_gasto" name="categoria_gasto">
+      <option value="">Elige…</option>
+      {% for c in categorias_gasto %}
+        <option value="{{ c.id }}" data-rubro="{{ c.rubro_sri or '' }}" data-rubro-nombre="{{ rubros.get(c.rubro_sri, '') }}"
+          {{ 'selected' if valores.categoria_gasto == c.id|string }}>{{ c.etiqueta }}</option>
+      {% endfor %}
+    </select>
+    {{ error(errores, 'categoria_gasto') }}
+  </div>
+
+  {# Categoría de ingreso #}
+  <div class="{{ clase_campo(errores, 'categoria_ingreso') }} solo-ingreso">
+    <label for="categoria_ingreso">Categoría</label>
+    {% if frecuentes_ingreso %}
+    <div class="chips">
+      {% for c in frecuentes_ingreso %}<button type="button" class="chip" data-chip-categoria="{{ c.id }}" data-campo="categoria_ingreso">{{ c.etiqueta }}</button>{% endfor %}
+    </div>
+    {% endif %}
+    <select id="categoria_ingreso" name="categoria_ingreso">
+      <option value="">Elige…</option>
+      {% for c in categorias_ingreso %}
+        <option value="{{ c.id }}" {{ 'selected' if valores.categoria_ingreso == c.id|string }}>{{ c.etiqueta }}</option>
+      {% endfor %}
+    </select>
+    {{ error(errores, 'categoria_ingreso') }}
+  </div>
+
+  <div class="dos-columnas">
+    <div class="{{ clase_campo(errores, 'cuenta_id') }}">
+      <label for="cuenta_id"><span class="solo-gasto">Pagado con</span><span class="solo-ingreso">Recibido en</span><span class="solo-movimiento-cuentas">Desde</span></label>
+      <select id="cuenta_id" name="cuenta_id">
+        <option value="">Elige…</option>
+        {% for c in cuentas %}<option value="{{ c.id }}" {{ 'selected' if valores.cuenta_id == c.id|string }}>{{ c.nombre }}</option>{% endfor %}
+      </select>
+      {{ error(errores, 'cuenta_id') }}
+    </div>
+
+    <div class="{{ clase_campo(errores, 'cuenta_destino_id') }} solo-transferencia">
+      <label for="cuenta_destino_id">Hacia</label>
+      <select id="cuenta_destino_id" name="cuenta_destino_id">
+        <option value="">Elige…</option>
+        {% for c in cuentas %}<option value="{{ c.id }}" {{ 'selected' if valores.cuenta_destino_id == c.id|string }}>{{ c.nombre }}</option>{% endfor %}
+      </select>
+      {{ error(errores, 'cuenta_destino_id') }}
+    </div>
+
+    <div class="{{ clase_campo(errores, 'cuenta_destino_ahorro') }} solo-ahorro">
+      <label for="cuenta_destino_ahorro">Guardar en</label>
+      {% if cuentas_ahorro %}
+      <select id="cuenta_destino_ahorro" name="cuenta_destino_ahorro">
+        {% for c in cuentas_ahorro %}<option value="{{ c.id }}" {{ 'selected' if valores.cuenta_destino_ahorro == c.id|string }}>{{ c.nombre }}</option>{% endfor %}
+      </select>
+      {% else %}
+      <p class="ayuda">Necesitas una cuenta de ahorros o inversión. <a href="/cuentas/nueva">Crear una</a></p>
+      {% endif %}
+      {{ error(errores, 'cuenta_destino_ahorro') }}
+    </div>
+
+    <div class="{{ clase_campo(errores, 'fecha') }}">
+      <label for="fecha">Fecha</label>
+      <input id="fecha" name="fecha" type="date" value="{{ valores.fecha or '' }}">
+      <div class="chips">
+        <button type="button" class="chip" data-fecha="{{ hoy.isoformat() }}">Hoy</button>
+        <button type="button" class="chip" data-fecha="{{ ayer.isoformat() }}">Ayer</button>
+      </div>
+      {{ error(errores, 'fecha') }}
+    </div>
+  </div>
+
+  <div class="{{ clase_campo(errores, 'comercio') }} solo-gasto-ingreso">
+    <label for="comercio"><span class="solo-gasto">Comercio</span><span class="solo-ingreso">Quién te pagó</span></label>
+    <input id="comercio" name="comercio" type="text" maxlength="120" autocomplete="off" value="{{ valores.comercio or '' }}"
+           placeholder="Opcional">
+    {{ error(errores, 'comercio') }}
+  </div>
+
+  <label class="casilla solo-gasto">
+    <input type="checkbox" name="deducible" value="1" {{ 'checked' if valores.deducible }}>
+    <span>Gasto personal deducible (factura a tu cédula)<br><span class="sutil" data-pista-rubro></span></span>
+  </label>
+
+  <div class="{{ clase_campo(errores, 'nota') }}">
+    <label for="nota">Nota</label>
+    <textarea id="nota" name="nota" maxlength="1000" placeholder="Opcional">{{ valores.nota or '' }}</textarea>
+    {{ error(errores, 'nota') }}
+  </div>
+
+  <details class="extra solo-gasto" {{ 'open' if errores.get('subtotal') or errores.get('iva') or errores.get('ruc_emisor') or errores.get('clave_acceso') or valores.clave_acceso }}>
+    <summary>Datos de la factura (opcional)</summary>
+    <div class="formulario">
+      <div class="dos-columnas">
+        <div class="{{ clase_campo(errores, 'subtotal') }}">
+          <label for="subtotal">Subtotal</label>
+          <input id="subtotal" name="subtotal" type="text" inputmode="decimal" value="{{ valores.subtotal or '' }}">
+          {{ error(errores, 'subtotal') }}
+        </div>
+        <div class="{{ clase_campo(errores, 'iva') }}">
+          <label for="iva">IVA</label>
+          <input id="iva" name="iva" type="text" inputmode="decimal" value="{{ valores.iva or '' }}">
+          {{ error(errores, 'iva') }}
+        </div>
+      </div>
+      <div class="{{ clase_campo(errores, 'ruc_emisor') }}">
+        <label for="ruc_emisor">RUC del comercio</label>
+        <input id="ruc_emisor" name="ruc_emisor" type="text" inputmode="numeric" maxlength="13" value="{{ valores.ruc_emisor or '' }}">
+        {{ error(errores, 'ruc_emisor') }}
+      </div>
+      <div class="{{ clase_campo(errores, 'clave_acceso') }}">
+        <label for="clave_acceso">Clave de acceso (49 dígitos)</label>
+        <input id="clave_acceso" name="clave_acceso" type="text" inputmode="numeric" maxlength="60" value="{{ valores.clave_acceso or '' }}">
+        {{ error(errores, 'clave_acceso') }}
+      </div>
+    </div>
+  </details>
+
+  <div class="acciones">
+    <button class="boton" type="submit">Guardar</button>
+    {% if not movimiento %}<button class="boton boton-sec" type="submit" name="otro" value="1">Guardar y agregar otro</button>{% endif %}
+  </div>
+</form>
+
+{% if movimiento %}
+<form method="post" action="/movimientos/{{ movimiento.id }}/eliminar" data-confirmar="¿Eliminar este movimiento? No se puede deshacer.">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}">
+  <button class="boton boton-peligro boton-chico" type="submit">Eliminar movimiento</button>
+</form>
+{% endif %}
+{% endif %}
+{% endblock %}

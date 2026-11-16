@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Configuración incompleta · Mi Centro de Control</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body class="pagina-login">
+  <main class="tarjeta">
+    <h1>Falta configurar la app</h1>
+    <p>Estas variables de entorno faltan o no son válidas:</p>
+    <ul>
+      {% for e in errores %}<li><code>{{ e }}</code></li>{% endfor %}
+    </ul>
+    {% if produccion %}
+      <p class="sutil">Agrégalas en Vercel → Settings → Environment Variables y vuelve a desplegar.
+        Los valores los genera <code>python scripts/crear_credenciales.py</code> en tu PC.</p>
+    {% else %}
+      <p class="sutil">En tu PC, ejecuta <code>python scripts/crear_credenciales.py</code> (o con <code>--demo</code>
+        para la contraseña de prueba del README) y reinicia el servidor.</p>
+    {% endif %}
+  </main>
+</body>
+</html>

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block titulo %}Categorías · Mi Centro de Control{% endblock %}
+
+{% macro fila(c) %}
+<a class="fila" href="/categorias/{{ c.id }}/editar">
+  <span class="mov-icono" aria-hidden="true">{{ c.icono or '•' }}</span>
+  <span class="mov-texto">
+    <span class="mov-titulo">{% if c.padre %}{{ c.padre.nombre }} › {% endif %}{{ c.nombre }}{% if not c.activa %} <span class="etiqueta">desactivada</span>{% endif %}</span>
+    <span class="mov-detalle">{% if c.rubro_sri %}Rubro SRI: {{ rubros[c.rubro_sri] }}{% else %}Sin rubro SRI{% endif %}</span>
+  </span>
+  <span class="monto monto-transferencia">{{ usos.get(c.id, 0) }}</span>
+</a>
+{% endmacro %}
+
+{% block contenido %}
+<div class="encabezado">
+  <h1>Categorías</h1>
+  <a class="boton boton-sec boton-chico" href="/mas">Volver</a>
+</div>
+
+<section class="tarjeta">
+  <div class="tarjeta-cabecera"><h2>Gastos</h2><a href="/categorias/nueva?tipo=gasto">+ Nueva</a></div>
+  <div class="seccion-titulo"><span>Categoría</span><span>Movimientos</span></div>
+  <div class="lista">{% for c in gasto %}{{ fila(c) }}{% endfor %}</div>
+</section>
+
+<section class="tarjeta">
+  <div class="tarjeta-cabecera"><h2>Ingresos</h2><a href="/categorias/nueva?tipo=ingreso">+ Nueva</a></div>
+  <div class="lista">{% for c in ingreso %}{{ fila(c) }}{% endfor %}</div>
+</section>
+
+<p class="sutil">Los rubros SRI son una sugerencia para tu proyección de gastos personales: revísalos con las reglas vigentes del SRI.</p>
+{% endblock %}

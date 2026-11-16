@@ -1,0 +1,46 @@
+{% from "_macros.html" import icono %}<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f9f9f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0d0d0d" media="(prefers-color-scheme: dark)">
+  <meta name="csrf-token" content="{{ csrf_token(request) }}">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{% block titulo %}Mi Centro de Control{% endblock %}</title>
+  <link rel="manifest" href="/static/manifest.webmanifest">
+  <link rel="icon" href="/static/iconos/icono.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/static/iconos/apple-touch-icon.png">
+  <link rel="stylesheet" href="/static/app.css?v={{ VERSION }}">
+  <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.4/dist/htmx.min.js" defer></script>
+  {% block scripts %}{% endblock %}
+  <script src="/static/app.js?v={{ VERSION }}" defer></script>
+</head>
+<body>
+  <header class="barra-superior">
+    <a class="marca" href="/"><img src="/static/iconos/icono.svg" alt=""> Mi Centro de Control</a>
+    <nav class="nav-escritorio" aria-label="Principal">
+      <a href="/" class="{{ 'activo' if seccion == 'inicio' }}">Inicio</a>
+      <a href="/movimientos" class="{{ 'activo' if seccion == 'movimientos' }}">Movimientos</a>
+      <a href="/cuentas" class="{{ 'activo' if seccion == 'cuentas' }}">Cuentas</a>
+      <a href="/mas" class="{{ 'activo' if seccion == 'mas' }}">Más</a>
+      <a href="/movimientos/nuevo" class="boton">+ Agregar</a>
+    </nav>
+  </header>
+
+  <main class="contenido">
+    {% for aviso in avisos %}
+      <div class="aviso aviso-{{ aviso.tipo }}" role="status">{{ aviso.texto }}</div>
+    {% endfor %}
+    {% block contenido %}{% endblock %}
+  </main>
+
+  <nav class="nav-movil" aria-label="Principal">
+    <a href="/" class="{{ 'activo' if seccion == 'inicio' }}">{{ icono("inicio") }}Inicio</a>
+    <a href="/movimientos" class="{{ 'activo' if seccion == 'movimientos' }}">{{ icono("lista") }}Movimientos</a>
+    <a href="/movimientos/nuevo" class="agregar" aria-label="Agregar movimiento">{{ icono("agregar") }}</a>
+    <a href="/cuentas" class="{{ 'activo' if seccion == 'cuentas' }}">{{ icono("cuenta") }}Cuentas</a>
+    <a href="/mas" class="{{ 'activo' if seccion == 'mas' }}">{{ icono("mas") }}Más</a>
+  </nav>
+</body>
+</html>

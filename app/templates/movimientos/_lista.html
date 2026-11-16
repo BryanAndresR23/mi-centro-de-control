@@ -1,0 +1,31 @@
+{% from "_macros.html" import icono, fila_movimiento %}
+<div class="encabezado">
+  <div class="navegador-mes">
+    <a href="{{ mes_anterior }}" aria-label="Mes anterior">{{ icono("izq") }}</a>
+    <h1>{{ titulo_mes }}</h1>
+    <a href="{{ mes_siguiente }}" aria-label="Mes siguiente">{{ icono("der") }}</a>
+  </div>
+  <div class="totales">
+    <span>Ingresos <b>{{ ingresos|usd }}</b></span>
+    <span>Gastos <b>{{ gastos|usd }}</b></span>
+  </div>
+</div>
+
+{% if dias %}
+<div class="lista" style="margin-top: 12px">
+  {% for dia in dias %}
+    <div class="dia">
+      <span>{{ dia.fecha|fecha_larga }}</span>
+      {% if dia.neto %}<span class="num">{{ dia.neto|usd(signo=True) }}</span>{% endif %}
+    </div>
+    {% for m in dia.movimientos %}{{ fila_movimiento(m) }}{% endfor %}
+  {% endfor %}
+</div>
+<p class="sutil" style="margin-top: 8px">{{ total_movimientos }} movimiento{{ 's' if total_movimientos != 1 }}{{ ' con estos filtros' if hay_filtros }}.</p>
+{% else %}
+<div class="vacio">
+  <span class="grande" aria-hidden="true">🗒️</span>
+  <p>{{ 'Nada coincide con los filtros.' if hay_filtros else 'No hay movimientos en ' ~ titulo_mes ~ '.' }}</p>
+  <a class="boton" href="/movimientos/nuevo">Registrar un movimiento</a>
+</div>
+{% endif %}

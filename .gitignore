@@ -1,0 +1,21 @@
+# Entorno y secretos
+.venv/
+.env
+.env.*
+!.env.example
+credenciales_qr.svg
+
+# Datos locales
+*.db
+*.db-journal
+respaldos/
+tests/fixtures_privados/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Vercel y herramientas locales
+.vercel/
+.claude/

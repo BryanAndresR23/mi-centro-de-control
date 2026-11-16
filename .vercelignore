@@ -1,0 +1,9 @@
+.venv
+.env
+*.db
+.claude
+tests
+scripts
+docs
+respaldos
+credenciales_qr.svg

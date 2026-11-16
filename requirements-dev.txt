@@ -1,0 +1,6 @@
+-r requirements.txt
+pytest==9.2.0
+httpx==0.28.1
+qrcode==8.2
+# Para subir el código a GitHub sin tener Git instalado (scripts/subir_github.py)
+dulwich==1.2.21

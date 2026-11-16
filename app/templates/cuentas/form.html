@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% from "_macros.html" import error, clase_campo %}
+{% block titulo %}{{ 'Editar cuenta' if cuenta else 'Nueva cuenta' }} · Mi Centro de Control{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <h1>{{ 'Editar cuenta' if cuenta else 'Nueva cuenta' }}</h1>
+  <a class="boton boton-sec boton-chico" href="/cuentas">Cancelar</a>
+</div>
+
+<form method="post" class="tarjeta formulario form-cuenta" data-tipos-pasivo="{{ tipos_pasivo|join(',') }}"
+      data-pasivo="{{ '1' if valores.tipo in tipos_pasivo else '0' }}" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}">
+
+  <div class="{{ clase_campo(errores, 'nombre') }}">
+    <label for="nombre">Nombre</label>
+    <input id="nombre" name="nombre" type="text" maxlength="80" required value="{{ valores.nombre or '' }}"
+           placeholder="Ej.: Pichincha ahorros, Visa Produbanco, Efectivo">
+    {{ error(errores, 'nombre') }}
+  </div>
+
+  <div class="dos-columnas">
+    <div class="{{ clase_campo(errores, 'tipo') }}">
+      <label for="tipo">Tipo</label>
+      <select id="tipo" name="tipo">
+        {% for clave, nombre in tipos.items() %}<option value="{{ clave }}" {{ 'selected' if valores.tipo == clave }}>{{ nombre }}</option>{% endfor %}
+      </select>
+      {{ error(errores, 'tipo') }}
+    </div>
+    <div class="{{ clase_campo(errores, 'institucion') }}">
+      <label for="institucion">Banco o institución</label>
+      <input id="institucion" name="institucion" type="text" maxlength="80" value="{{ valores.institucion or '' }}" placeholder="Opcional">
+      {{ error(errores, 'institucion') }}
+    </div>
+  </div>
+
+  <div class="dos-columnas">
+    <div class="{{ clase_campo(errores, 'saldo_inicial') }}">
+      <label for="saldo_inicial"><span class="solo-activo">Saldo</span><span class="solo-pasivo">Lo que debes</span></label>
+      <input id="saldo_inicial" name="saldo_inicial" type="text" inputmode="decimal" value="{{ valores.saldo_inicial or '' }}" placeholder="0.00">
+      {{ error(errores, 'saldo_inicial') }}
+    </div>
+    <div class="{{ clase_campo(errores, 'fecha_saldo_inicial') }}">
+      <label for="fecha_saldo_inicial">Al inicio del día</label>
+      <input id="fecha_saldo_inicial" name="fecha_saldo_inicial" type="date" value="{{ valores.fecha_saldo_inicial or '' }}">
+      {{ error(errores, 'fecha_saldo_inicial') }}
+    </div>
+  </div>
+  <p class="ayuda sutil">Los movimientos desde esa fecha se suman a este saldo. Si luego registras movimientos anteriores, sirven para tu historial sin cambiar el saldo de hoy.</p>
+
+  <div class="solo-pasivo formulario">
+    <div class="{{ clase_campo(errores, 'cupo') }}">
+      <label for="cupo">Cupo de la tarjeta</label>
+      <input id="cupo" name="cupo" type="text" inputmode="decimal" value="{{ valores.cupo or '' }}" placeholder="Opcional">
+      {{ error(errores, 'cupo') }}
+    </div>
+    <div class="dos-columnas">
+      <div class="{{ clase_campo(errores, 'dia_corte') }}">
+        <label for="dia_corte">Día de corte</label>
+        <input id="dia_corte" name="dia_corte" type="number" min="1" max="31" inputmode="numeric" value="{{ valores.dia_corte or '' }}">
+        {{ error(errores, 'dia_corte') }}
+      </div>
+      <div class="{{ clase_campo(errores, 'dia_pago') }}">
+        <label for="dia_pago">Día máximo de pago</label>
+        <input id="dia_pago" name="dia_pago" type="number" min="1" max="31" inputmode="numeric" value="{{ valores.dia_pago or '' }}">
+        {{ error(errores, 'dia_pago') }}
+      </div>
+    </div>
+  </div>
+
+  <label class="casilla">
+    <input type="checkbox" name="activa" value="1" {{ 'checked' if valores.activa }}>
+    <span>Cuenta activa <span class="sutil">(las desactivadas no aparecen al registrar movimientos)</span></span>
+  </label>
+
+  <div class="acciones">
+    <button class="boton" type="submit">Guardar</button>
+  </div>
+</form>
+
+{% if cuenta %}
+  {% if usos %}
+  <p class="sutil">Esta cuenta tiene {{ usos }} movimiento{{ 's' if usos != 1 }}. Para dejar de usarla, desactívala.</p>
+  {% else %}
+  <form method="post" action="/cuentas/{{ cuenta.id }}/eliminar" data-confirmar="¿Eliminar la cuenta «{{ cuenta.nombre }}»?">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}">
+    <button class="boton boton-peligro boton-chico" type="submit">Eliminar cuenta</button>
+  </form>
+  {% endif %}
+{% endif %}
+{% endblock %}

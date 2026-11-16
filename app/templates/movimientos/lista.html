@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block titulo %}Movimientos · Mi Centro de Control{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <h1>Movimientos</h1>
+  <a class="boton boton-chico" href="/movimientos/nuevo">+ Agregar</a>
+</div>
+
+<form class="tarjeta filtros" method="get" action="/movimientos"
+      hx-get="/movimientos" hx-target="#lista-movimientos" hx-push-url="true"
+      hx-trigger="change, input changed delay:400ms from:input[name='q']">
+  <input type="hidden" name="mes" value="{{ mes_valor }}">
+  <div class="campo busqueda">
+    <label for="q" class="oculto">Buscar</label>
+    <input id="q" name="q" type="search" placeholder="Buscar comercio o nota" value="{{ filtros.q }}">
+  </div>
+  <div class="campo">
+    <label for="f-tipo" class="oculto">Tipo</label>
+    <select id="f-tipo" name="tipo">
+      <option value="">Todos los tipos</option>
+      <option value="gasto" {{ 'selected' if filtros.tipo == 'gasto' }}>Gastos</option>
+      <option value="ingreso" {{ 'selected' if filtros.tipo == 'ingreso' }}>Ingresos</option>
+      <option value="transferencia" {{ 'selected' if filtros.tipo == 'transferencia' }}>Transferencias</option>
+    </select>
+  </div>
+  <div class="campo">
+    <label for="f-cuenta" class="oculto">Cuenta</label>
+    <select id="f-cuenta" name="cuenta">
+      <option value="">Todas las cuentas</option>
+      {% for c in cuentas %}<option value="{{ c.id }}" {{ 'selected' if filtros.cuenta == c.id|string }}>{{ c.nombre }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="campo">
+    <label for="f-categoria" class="oculto">Categoría</label>
+    <select id="f-categoria" name="categoria">
+      <option value="">Todas las categorías</option>
+      <optgroup label="Gastos">
+        {% for c in categorias if c.tipo == 'gasto' %}<option value="{{ c.id }}" {{ 'selected' if filtros.categoria == c.id|string }}>{{ c.etiqueta }}</option>{% endfor %}
+      </optgroup>
+      <optgroup label="Ingresos">
+        {% for c in categorias if c.tipo == 'ingreso' %}<option value="{{ c.id }}" {{ 'selected' if filtros.categoria == c.id|string }}>{{ c.etiqueta }}</option>{% endfor %}
+      </optgroup>
+    </select>
+  </div>
+  <noscript><button class="boton boton-chico" type="submit">Filtrar</button></noscript>
+</form>
+
+<section class="tarjeta" id="lista-movimientos">
+  {% include "movimientos/_lista.html" %}
+</section>
+{% endblock %}

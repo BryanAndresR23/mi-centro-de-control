@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block titulo %}Cuentas · Mi Centro de Control{% endblock %}
+
+{% macro fila(f) %}
+<a class="fila" href="/cuentas/{{ f.cuenta.id }}/editar">
+  <span class="mov-icono" aria-hidden="true">{% if f.cuenta.es_pasivo %}💳{% elif f.cuenta.tipo == 'efectivo' %}💵{% elif f.cuenta.tipo == 'inversion' %}📈{% else %}🏦{% endif %}</span>
+  <span class="mov-texto">
+    <span class="mov-titulo">{{ f.cuenta.nombre }}</span>
+    <span class="mov-detalle">{{ f.cuenta.tipo_nombre }}{% if f.cuenta.institucion %} · {{ f.cuenta.institucion }}{% endif %}</span>
+  </span>
+  <span class="monto">
+    {% if f.cuenta.es_pasivo %}
+      {{ f.deuda|usd }}<small>{% if f.disponible is not none %}disponible {{ f.disponible|usd }}{% else %}por pagar{% endif %}</small>
+    {% else %}
+      {{ f.saldo|usd }}
+    {% endif %}
+  </span>
+</a>
+{% endmacro %}
+
+{% block contenido %}
+<div class="encabezado">
+  <h1>Cuentas</h1>
+  <a class="boton boton-chico" href="/cuentas/nueva">+ Nueva cuenta</a>
+</div>
+
+<section class="tarjeta heroe">
+  <span class="etiqueta-kpi">Patrimonio neto</span>
+  <span class="valor">{{ patrimonio|usd }}</span>
+  <span class="detalle">Tienes {{ total_activos|usd }} · Debes {{ total_pasivos|usd }}</span>
+</section>
+
+<section class="tarjeta">
+  <div class="seccion-titulo"><span>Lo que tienes</span><span class="num">{{ total_activos|usd }}</span></div>
+  {% if activos %}
+  <div class="lista">{% for f in activos %}{{ fila(f) }}{% endfor %}</div>
+  {% else %}
+  <p class="vacio">Agrega tu efectivo y tus cuentas de banco.</p>
+  {% endif %}
+</section>
+
+<section class="tarjeta">
+  <div class="seccion-titulo"><span>Lo que debes</span><span class="num">{{ total_pasivos|usd }}</span></div>
+  {% if pasivos %}
+  <div class="lista">{% for f in pasivos %}{{ fila(f) }}{% endfor %}</div>
+  {% else %}
+  <p class="vacio">Sin tarjetas ni préstamos registrados.</p>
+  {% endif %}
+</section>
+
+{% if inactivas %}
+<details class="tarjeta">
+  <summary class="seccion-titulo" style="cursor:pointer">Cuentas desactivadas ({{ inactivas|length }})</summary>
+  <div class="lista">{% for f in inactivas %}{{ fila(f) }}{% endfor %}</div>
+</details>
+{% endif %}
+
+<p class="sutil">Pagar la tarjeta se registra como <b>transferencia</b> de tu cuenta a la tarjeta: el gasto ya se contó cuando compraste con ella.</p>
+{% endblock %}

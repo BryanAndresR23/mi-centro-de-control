@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block titulo %}Más · Mi Centro de Control{% endblock %}
+{% block contenido %}
+<h1>Más</h1>
+
+<section class="tarjeta">
+  <h2>Finanzas</h2>
+  <ul class="menu">
+    <li><a href="/cuentas">Cuentas <span aria-hidden="true">›</span></a></li>
+    <li><a href="/categorias">Categorías <span aria-hidden="true">›</span></a></li>
+    <li><span class="deshabilitado">Presupuestos <span class="etiqueta">Fase 1b</span></span></li>
+    <li><span class="deshabilitado">Metas de ahorro <span class="etiqueta">Fase 1b</span></span></li>
+    <li><span class="deshabilitado">Deudas y suscripciones <span class="etiqueta">Fase 1b</span></span></li>
+    <li><span class="deshabilitado">Fotos de recibos e importación <span class="etiqueta">Fase 2</span></span></li>
+  </ul>
+</section>
+
+<section class="tarjeta">
+  <h2>Pendientes y metas</h2>
+  <ul class="menu">
+    <li><span class="deshabilitado">Tablero por áreas y vista Hoy <span class="etiqueta">Fase 3</span></span></li>
+    <li><span class="deshabilitado">Asesor, revisión semanal y recordatorios <span class="etiqueta">Fase 4</span></span></li>
+  </ul>
+</section>
+
+<section class="tarjeta">
+  <h2>Datos y seguridad</h2>
+  <ul class="menu">
+    <li><a href="/respaldo">Respaldo y restauración <span aria-hidden="true">›</span></a></li>
+    <li><span class="deshabilitado" style="color: var(--texto-2)">Verificación en dos pasos <span class="etiqueta">{{ 'activa' if usa_2fa else 'desactivada' }}</span></span></li>
+  </ul>
+  <form method="post" action="/logout" style="margin-top: 12px">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}">
+    <button class="boton boton-sec boton-ancho" type="submit">Cerrar sesión</button>
+  </form>
+</section>
+
+<p class="sutil">Versión {{ VERSION }} · entorno: {{ entorno }}</p>
+{% endblock %}

@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icono, fila_movimiento, delta %}
+{% block titulo %}Inicio · Mi Centro de Control{% endblock %}
+{% block scripts %}<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>{% endblock %}
+{% block contenido %}
+
+<div class="encabezado">
+  <div class="navegador-mes">
+    <a href="/?mes={{ mes_anterior }}" aria-label="Mes anterior">{{ icono("izq") }}</a>
+    <h1>{{ titulo_mes }}</h1>
+    <a href="/?mes={{ mes_siguiente }}" aria-label="Mes siguiente">{{ icono("der") }}</a>
+  </div>
+  {% if not es_mes_actual %}<a class="boton boton-sec boton-chico" href="/">Ir a este mes</a>{% endif %}
+</div>
+
+{% if sin_cuentas %}
+<section class="tarjeta vacio">
+  <span class="grande" aria-hidden="true">👋</span>
+  <h2>Empieza por tus cuentas</h2>
+  <p>Agrega tu efectivo, tus cuentas de banco y tus tarjetas con el saldo que tienen hoy.
+     Después registra tus gastos e ingresos y aquí verás tu resumen.</p>
+  <a class="boton" href="/cuentas/nueva">Crear mi primera cuenta</a>
+</section>
+{% endif %}
+
+<section class="tarjeta heroe" aria-label="Resumen del mes">
+  <span class="etiqueta-kpi">{{ "Balance del mes hasta hoy" if es_mes_actual else "Balance de " ~ titulo_mes }}</span>
+  <span class="valor">{{ resumen.flujo|usd }}</span>
+  <span class="detalle">
+    Ingresos {{ resumen.ingresos|usd }} · Gastos {{ resumen.gastos|usd }}
+  </span>
+</section>
+
+<section class="kpis" aria-label="Indicadores">
+  <div class="tarjeta kpi">
+    <span class="etiqueta-kpi">Ingresos</span>
+    <span class="valor">{{ resumen.ingresos|usd }}</span>
+    {{ delta(var_ingresos, true, referencia) }}
+  </div>
+  <div class="tarjeta kpi">
+    <span class="etiqueta-kpi">Gastos</span>
+    <span class="valor">{{ resumen.gastos|usd }}</span>
+    {{ delta(var_gastos, false, referencia) }}
+  </div>
+  <div class="tarjeta kpi">
+    <span class="etiqueta-kpi">Tasa de ahorro</span>
+    <span class="valor">{{ resumen.tasa_ahorro|pct }}</span>
+    <span class="delta">Promedio 12 meses: {{ tasa_promedio|pct }}</span>
+  </div>
+  <a class="tarjeta kpi" href="/cuentas" style="color: inherit; text-decoration: none;">
+    <span class="etiqueta-kpi">Patrimonio neto</span>
+    <span class="valor">{{ patrimonio|usd }}</span>
+    <span class="delta">Tienes {{ activos|usd }} · Debes {{ pasivos|usd }}</span>
+  </a>
+</section>
+
+<div class="rejilla-2">
+  <section class="tarjeta">
+    <div class="tarjeta-cabecera">
+      <h2>Gasto por categoría</h2>
+      <a href="/movimientos?mes={{ mes_valor }}&amp;tipo=gasto">Ver gastos</a>
+    </div>
+    {% if por_categoria %}
+    <ul class="barras">
+      {% for c in por_categoria %}
+      <li>
+        <a href="/movimientos?mes={{ mes_valor }}&amp;tipo=gasto{% if c.id %}&amp;categoria={{ c.id }}{% endif %}">
+          <span class="nombre">{{ c.icono }} {{ c.nombre }}</span>
+          <span class="cifra">{{ c.total|usd }}<small>{{ c.peso|pct }}</small></span>
+          <span class="pista" aria-hidden="true"><span class="relleno" style="display:block; width: {{ ((c.total / mayor_categoria) * 100)|round(1) if mayor_categoria else 0 }}%"></span></span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="vacio">Aún no hay gastos en {{ titulo_mes }}.</p>
+    {% endif %}
+  </section>
+
+  <section class="tarjeta">
+    <div class="tarjeta-cabecera">
+      <h2>Saldos de hoy</h2>
+      <a href="/cuentas">Cuentas</a>
+    </div>
+    {% if filas_cuentas %}
+    <div class="lista">
+      {% for f in filas_cuentas %}
+      <a class="fila" href="/movimientos?mes={{ mes_valor }}&amp;cuenta={{ f.cuenta.id }}">
+        <span class="mov-icono" aria-hidden="true">{% if f.cuenta.es_pasivo %}💳{% elif f.cuenta.tipo == 'efectivo' %}💵{% elif f.cuenta.tipo == 'inversion' %}📈{% else %}🏦{% endif %}</span>
+        <span class="mov-texto">
+          <span class="mov-titulo">{{ f.cuenta.nombre }}</span>
+          <span class="mov-detalle">{{ f.cuenta.tipo_nombre }}</span>
+        </span>
+        <span class="monto">{% if f.cuenta.es_pasivo %}{{ (-f.saldo)|usd }}<small>por pagar</small>{% else %}{{ f.saldo|usd }}{% endif %}</span>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="vacio">Sin cuentas todavía.</p>
+    {% endif %}
+  </section>
+</div>
+
+<section class="tarjeta">
+  <div class="tarjeta-cabecera"><h2>Ingresos y gastos, últimos 12 meses</h2></div>
+  <div class="leyenda" aria-hidden="true">
+    <span><i style="background: var(--serie-1)"></i>Ingresos</span>
+    <span><i style="background: var(--serie-2)"></i>Gastos</span>
+  </div>
+  <div class="grafico"><canvas id="grafico-tendencia" role="img" aria-label="Ingresos y gastos por mes en los últimos 12 meses. Detalle en la tabla."></canvas></div>
+  <details class="ver-tabla">
+    <summary>Ver tabla</summary>
+    <table>
+      <thead><tr><th>Mes</th><th class="num">Ingresos</th><th class="num">Gastos</th><th class="num">Flujo</th></tr></thead>
+      <tbody>
+        {% for f in tabla_meses %}
+        <tr><td>{{ f.mes }}</td><td class="num">{{ f.ingresos|usd }}</td><td class="num">{{ f.gastos|usd }}</td><td class="num">{{ f.flujo|usd }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </details>
+</section>
+
+<div class="rejilla-2">
+  <section class="tarjeta">
+    <div class="tarjeta-cabecera"><h2>Patrimonio neto al cierre de cada mes</h2></div>
+    <div class="grafico"><canvas id="grafico-patrimonio" role="img" aria-label="Patrimonio neto al cierre de cada mes. Detalle en la tabla."></canvas></div>
+    <details class="ver-tabla">
+      <summary>Ver tabla</summary>
+      <table>
+        <thead><tr><th>Mes</th><th class="num">Patrimonio</th></tr></thead>
+        <tbody>
+          {% for f in tabla_meses %}<tr><td>{{ f.mes }}</td><td class="num">{{ f.patrimonio|usd }}</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </details>
+  </section>
+
+  <section class="tarjeta">
+    <div class="tarjeta-cabecera">
+      <h2>Últimos movimientos</h2>
+      <a href="/movimientos">Ver todos</a>
+    </div>
+    {% if recientes %}
+    <div class="lista">{% for m in recientes %}{{ fila_movimiento(m) }}{% endfor %}</div>
+    {% else %}
+    <p class="vacio">Todavía no registras movimientos.</p>
+    {% endif %}
+  </section>
+</div>
+
+<script type="application/json" id="datos-graficos">{{ graficos|tojson }}</script>
+{% endblock %}

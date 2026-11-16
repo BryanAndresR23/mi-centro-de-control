@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% from "_macros.html" import error, clase_campo %}
+{% block titulo %}{{ 'Editar categoría' if categoria else 'Nueva categoría' }} · Mi Centro de Control{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <h1>{{ 'Editar categoría' if categoria else 'Nueva categoría' }}</h1>
+  <a class="boton boton-sec boton-chico" href="/categorias">Cancelar</a>
+</div>
+
+<form method="post" class="tarjeta formulario form-categoria" data-tipo="{{ valores.tipo }}" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}">
+
+  <div class="dos-columnas">
+    <div class="{{ clase_campo(errores, 'nombre') }}">
+      <label for="nombre">Nombre</label>
+      <input id="nombre" name="nombre" type="text" maxlength="60" value="{{ valores.nombre or '' }}">
+      {{ error(errores, 'nombre') }}
+    </div>
+    <div class="{{ clase_campo(errores, 'icono') }}">
+      <label for="icono">Ícono (emoji)</label>
+      <input id="icono" name="icono" type="text" maxlength="16" value="{{ valores.icono or '' }}" placeholder="🛒">
+      {{ error(errores, 'icono') }}
+    </div>
+  </div>
+
+  <div class="{{ clase_campo(errores, 'tipo') }}">
+    <label for="tipo">Tipo</label>
+    <select id="tipo" name="tipo">
+      <option value="gasto" {{ 'selected' if valores.tipo == 'gasto' }}>Gasto</option>
+      <option value="ingreso" {{ 'selected' if valores.tipo == 'ingreso' }}>Ingreso</option>
+    </select>
+    {{ error(errores, 'tipo') }}
+  </div>
+
+  <div class="{{ clase_campo(errores, 'rubro_sri') }} solo-gasto">
+    <label for="rubro_sri">Rubro de gastos personales (SRI)</label>
+    <select id="rubro_sri" name="rubro_sri">
+      <option value="">Ninguno</option>
+      {% for clave, nombre in rubros.items() %}<option value="{{ clave }}" {{ 'selected' if valores.rubro_sri == clave }}>{{ nombre }}</option>{% endfor %}
+    </select>
+    <span class="ayuda">Al elegir esta categoría en un gasto, se marcará como deducible (puedes desmarcarlo).</span>
+    {{ error(errores, 'rubro_sri') }}
+  </div>
+
+  <div class="{{ clase_campo(errores, 'padre_id') }}">
+    <label for="padre_id">Dentro de (opcional)</label>
+    <select id="padre_id" name="padre_id">
+      <option value="">— Es una categoría principal —</option>
+      {% for p in padres %}<option value="{{ p.id }}" {{ 'selected' if valores.padre_id == p.id|string }}>{{ p.etiqueta }} ({{ p.tipo }})</option>{% endfor %}
+    </select>
+    <span class="ayuda">Las subcategorías se suman a su categoría principal en el dashboard.</span>
+    {{ error(errores, 'padre_id') }}
+  </div>
+
+  <label class="casilla">
+    <input type="checkbox" name="activa" value="1" {{ 'checked' if valores.activa }}>
+    <span>Activa</span>
+  </label>
+
+  <div class="acciones"><button class="boton" type="submit">Guardar</button></div>
+</form>
+
+{% if categoria %}
+  {% if usos %}
+  <p class="sutil">Tiene {{ usos }} movimiento{{ 's' if usos != 1 }}. Para dejar de usarla, desactívala.</p>
+  {% else %}
+  <form method="post" action="/categorias/{{ categoria.id }}/eliminar" data-confirmar="¿Eliminar la categoría «{{ categoria.nombre }}»?">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}">
+    <button class="boton boton-peligro boton-chico" type="submit">Eliminar categoría</button>
+  </form>
+  {% endif %}
+{% endif %}
+{% endblock %}
