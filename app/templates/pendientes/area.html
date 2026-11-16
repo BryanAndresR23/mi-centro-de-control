@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% from "_macros.html" import fila_tarea, form_tarea_rapida %}
+{% block titulo %}{{ area.nombre }} · Mi Centro de Control{% endblock %}
+{% block contenido %}
+{% set token = csrf_token(request) %}
+<div class="encabezado">
+  <h1>{{ area.icono or '' }} {{ area.nombre }}</h1>
+  <div class="acciones"><a class="boton boton-sec boton-chico" href="/pendientes/area/{{ area.id }}/editar">Editar área</a>
+    <a class="boton boton-sec boton-chico" href="/pendientes">Tablero</a></div>
+</div>
+
+{# ---------------- Fitness ---------------- #}
+{% if area.plantilla == 'fitness' %}
+<section class="kpis">
+  <div class="tarjeta kpi"><span class="etiqueta-kpi">Entrenamientos esta semana</span><span class="valor">{{ entrenos_semana }}</span>
+    <span class="delta">objetivo {{ (area.config or {}).get('entrenamientos_semana', 4) }}</span></div>
+  <div class="tarjeta kpi"><span class="etiqueta-kpi">Hoy toca</span><span class="valor" style="font-size:1.05rem">{{ rutinas[hoy.weekday()].nombre if hoy.weekday() in rutinas else 'Descanso' }}</span></div>
+</section>
+<section class="tarjeta">
+  <h2>Registrar entrenamiento</h2>
+  <form method="post" action="/pendientes/fitness/entrenamiento" class="formulario" style="margin-top:12px">
+    <input type="hidden" name="csrf_token" value="{{ token }}">
+    <div class="dos-columnas">
+      <div class="campo"><label>Fecha</label><input name="fecha" type="date" value="{{ hoy.isoformat() }}"></div>
+      <div class="campo"><label>Rutina</label><input name="rutina" type="text" maxlength="80" value="{{ rutinas[hoy.weekday()].nombre if hoy.weekday() in rutinas else '' }}" placeholder="Pierna, Empuje…"></div>
+    </div>
+    <div class="series">
+      <span class="rotulo-series">Ejercicio</span><span class="rotulo-series">Reps</span><span class="rotulo-series">Peso (kg)</span>
+      {% for i in range(6) %}
+        <input name="ejercicio" type="text" maxlength="80" placeholder="{{ 'Sentadilla' if i == 0 else '' }}" aria-label="Ejercicio {{ i + 1 }}">
+        <input name="repeticiones" type="number" min="1" max="100" inputmode="numeric" aria-label="Repeticiones {{ i + 1 }}">
+        <input name="peso" type="text" inputmode="decimal" aria-label="Peso {{ i + 1 }}">
+      {% endfor %}
+    </div>
+    <div class="dos-columnas">
+      <div class="campo"><label>Duración (min)</label><input name="duracion_min" type="number" min="1" max="600"></div>
+      <div class="campo"><label>Nota</label><input name="nota" type="text" maxlength="1000"></div>
+    </div>
+    <div class="acciones"><button class="boton" type="submit">Guardar entrenamiento</button></div>
+  </form>
+</section>
+<div class="rejilla-2">
+  <section class="tarjeta">
+    <h2>Progreso (1RM estimado)</h2>
+    {% if marcas %}<table style="margin-top:10px"><thead><tr><th>Ejercicio</th><th class="num">Mejor 1RM</th><th>Fecha</th></tr></thead>
+      <tbody>{% for nombre, (valor, fecha) in marcas %}<tr><td class="capital">{{ nombre }}</td><td class="num">{{ valor }} kg</td><td>{{ fecha|fecha_corta }}</td></tr>{% endfor %}</tbody></table>
+    {% else %}<p class="vacio">Registra series con peso para ver tu progreso.</p>{% endif %}
+  </section>
+  <section class="tarjeta">
+    <h2>Últimos entrenamientos</h2>
+    {% if entrenamientos %}<div class="lista">{% for e in entrenamientos %}
+      <div class="fila"><span class="mov-icono">🏋️</span><span class="mov-texto"><span class="mov-titulo">{{ e.rutina or 'Entrenamiento' }}</span>
+        <span class="mov-detalle">{{ e.fecha|fecha_corta }} · {{ e.series|length }} series{% if e.duracion_min %} · {{ e.duracion_min }} min{% endif %}</span></span></div>{% endfor %}</div>
+    {% else %}<p class="vacio">Aún no registras entrenamientos.</p>{% endif %}
+  </section>
+</div>
+<details class="tarjeta">
+  <summary class="seccion-titulo" style="cursor:pointer">Rutina semanal</summary>
+  <form method="post" action="/pendientes/fitness/rutina" class="formulario" style="margin-top:10px">
+    <input type="hidden" name="csrf_token" value="{{ token }}">
+    {% for dia in range(7) %}{% set r = rutinas.get(dia) %}
+    <div class="dos-columnas">
+      <div class="campo"><label>{{ dias[dia] }}</label><input name="nombre_{{ dia }}" type="text" maxlength="80" value="{{ r.nombre if r else '' }}" placeholder="Descanso"></div>
+      <div class="campo"><label>Ejercicios (uno por línea)</label><textarea name="ejercicios_{{ dia }}" rows="2" placeholder="Sentadilla 4x8">{{ r.ejercicios if r else '' }}</textarea></div>
+    </div>
+    {% endfor %}
+    <div class="acciones"><button class="boton" type="submit">Guardar rutina</button></div>
+  </form>
+</details>
+{% endif %}
+
+{# ---------------- Idioma o habilidad ---------------- #}
+{% if area.plantilla in ('idioma', 'habilidad') %}
+<section class="kpis">
+  <div class="tarjeta kpi"><span class="etiqueta-kpi">Esta semana</span><span class="valor">{{ (estudio.minutos_semana / 60)|round(1) }} h</span>
+    <span class="delta">objetivo {{ (estudio.objetivo_minutos / 60)|round(1) }} h</span></div>
+  <div class="tarjeta kpi"><span class="etiqueta-kpi">Racha</span><span class="valor">🔥 {{ estudio.racha }} día{{ 's' if estudio.racha != 1 }}</span></div>
+  <div class="tarjeta kpi"><span class="etiqueta-kpi">Horas totales</span><span class="valor">{{ estudio.horas_totales }}</span></div>
+  <div class="tarjeta kpi"><span class="etiqueta-kpi">Nivel</span><span class="valor" style="font-size:1.05rem">{{ (area.config or {}).get('nivel_actual', '—') }} → {{ (area.config or {}).get('nivel_objetivo', '—') }}</span></div>
+</section>
+<section class="tarjeta">
+  <h2>Registrar sesión de estudio</h2>
+  <form method="post" action="/pendientes/estudio/{{ area.id }}" class="tarea-rapida" style="margin-top:10px">
+    <input type="hidden" name="csrf_token" value="{{ token }}">
+    <input name="minutos" type="number" min="1" max="900" inputmode="numeric" placeholder="Minutos" aria-label="Minutos" required>
+    <input name="tema" type="text" maxlength="200" placeholder="Tema (listening, JOINs…)" aria-label="Tema">
+    <input name="fecha" type="date" value="{{ hoy.isoformat() }}" aria-label="Fecha">
+    <button class="boton boton-chico" type="submit">Registrar</button>
+  </form>
+  {% if sesiones %}<div class="lista" style="margin-top:10px">{% for s in sesiones %}
+    <div class="fila"><span class="mov-icono">⏱️</span><span class="mov-texto"><span class="mov-titulo">{{ s.tema or 'Sesión' }}</span><span class="mov-detalle">{{ s.fecha|fecha_corta }}</span></span><span class="monto">{{ s.minutos }} min</span></div>{% endfor %}</div>{% endif %}
+</section>
+{% endif %}
+
+{# ---------------- Postulaciones ---------------- #}
+{% if area.plantilla == 'postulaciones' %}
+<section class="embudo">
+  {% for k, v in estados.items() %}<div class="tarjeta kpi"><span class="etiqueta-kpi">{{ v }}</span><span class="valor">{{ embudo[k] }}</span></div>{% endfor %}
+</section>
+<details class="tarjeta" {{ 'open' if not postulaciones }}>
+  <summary class="seccion-titulo" style="cursor:pointer">+ Nueva postulación</summary>
+  {% set p = None %}{% include "pendientes/_postulacion_form.html" %}
+</details>
+{% for p in postulaciones %}
+<details class="tarjeta">
+  <summary class="postulacion-resumen"><b>{{ p.empresa }}</b> · {{ p.cargo }} <span class="etiqueta">{{ estados[p.estado] }}</span>
+    {% if p.proximo_paso %}<span class="sutil">→ {{ p.proximo_paso }}{% if p.fecha_proximo_paso %} ({{ p.fecha_proximo_paso|fecha_corta }}){% endif %}</span>{% endif %}</summary>
+  {% include "pendientes/_postulacion_form.html" %}
+</details>
+{% endfor %}
+{% endif %}
+
+{# ---------------- Becas ---------------- #}
+{% if area.plantilla == 'becas' %}
+<details class="tarjeta" {{ 'open' if not becas }}>
+  <summary class="seccion-titulo" style="cursor:pointer">+ Nueva beca o programa</summary>
+  {% set b = None %}{% include "pendientes/_beca_form.html" %}
+</details>
+{% for b in becas %}{% set hechos = b.requisitos|selectattr('hecho')|list|length %}
+<section class="tarjeta">
+  <div class="tarjeta-cabecera"><h2>{{ b.programa }}</h2><span class="etiqueta">{{ estados[b.estado] }}</span></div>
+  <p class="sutil">{{ b.universidad or '' }}{% if b.pais %} · {{ b.pais }}{% endif %}{% if b.beca %} · {{ b.beca }}{% endif %}
+    {% if b.fecha_limite %} · cierra <b>{{ b.fecha_limite|fecha_corta }}</b>{% if (b.fecha_limite - hoy).days >= 0 %} (en {{ (b.fecha_limite - hoy).days }} días){% endif %}{% endif %}</p>
+  <div class="pista-simple" aria-hidden="true"><span style="width: {{ (hechos / (b.requisitos|length or 1) * 100)|round(0) }}%"></span></div>
+  <ul class="checklist">
+    {% for r in b.requisitos %}<li><form method="post" action="/pendientes/becas/requisito/{{ r.id }}"><input type="hidden" name="csrf_token" value="{{ token }}">
+      <button class="check {{ 'hecho' if r.hecho }}" type="submit" aria-label="Alternar {{ r.requisito }}">{{ '✓' if r.hecho else '' }}</button></form>
+      <span class="{{ 'tachado' if r.hecho }}">{{ r.requisito }}</span></li>{% endfor %}
+  </ul>
+  <details class="extra"><summary>Editar</summary>{% include "pendientes/_beca_form.html" %}</details>
+</section>
+{% endfor %}
+{% endif %}
+
+{# ---------------- Metas personales ---------------- #}
+{% if area.plantilla == 'metas' %}
+<section class="tarjeta">
+  <h2>Nueva meta</h2>
+  <form method="post" action="/pendientes/metas" class="tarea-rapida" style="margin-top:10px">
+    <input type="hidden" name="csrf_token" value="{{ token }}">
+    <input type="hidden" name="area_id" value="{{ area.id }}">
+    <input name="titulo" type="text" maxlength="200" placeholder="Ej.: Conseguir la beca de maestría" aria-label="Meta" required>
+    <select name="horizonte" aria-label="Horizonte"><option value="trimestral">Trimestre {{ periodo_trimestre }}</option><option value="anual">Año {{ periodo_anio }}</option></select>
+    <button class="boton boton-chico" type="submit">Crear</button>
+  </form>
+</section>
+{% for m, hitos, (hechos, total) in metas %}
+<section class="tarjeta">
+  <div class="tarjeta-cabecera"><h2>🎯 {{ m.titulo }}</h2><span class="etiqueta">{{ m.periodo }} · {{ m.estado }}</span></div>
+  <div class="pista-simple" aria-hidden="true"><span style="width: {{ (hechos / (total or 1) * 100)|round(0) }}%"></span></div>
+  <p class="sutil">{{ hechos }} de {{ total }} hitos</p>
+  <div class="lista">{% for t in hitos %}{{ fila_tarea(t, token, hoy, urgencia, mostrar_area=false) }}{% endfor %}</div>
+  <form method="post" action="/pendientes/tareas/nueva" class="tarea-rapida" style="margin-top:8px">
+    <input type="hidden" name="csrf_token" value="{{ token }}"><input type="hidden" name="area_id" value="{{ area.id }}">
+    <input type="hidden" name="meta_personal_id" value="{{ m.id }}">
+    <input name="titulo" type="text" maxlength="200" placeholder="Nuevo hito…" aria-label="Nuevo hito" required>
+    <input name="fecha_limite" type="date" aria-label="Fecha">
+    <button class="boton boton-chico" type="submit">Agregar hito</button>
+  </form>
+  {% if m.estado == 'activa' %}<form method="post" action="/pendientes/metas/{{ m.id }}/estado" class="acciones" style="margin-top:8px">
+    <input type="hidden" name="csrf_token" value="{{ token }}">
+    <button class="boton boton-sec boton-chico" name="estado" value="cumplida">Marcar cumplida</button>
+    <button class="boton boton-sec boton-chico" name="estado" value="abandonada">Abandonar</button></form>{% endif %}
+</section>
+{% endfor %}
+{% endif %}
+
+{# ---------------- Tareas (todas las áreas) ---------------- #}
+<section class="tarjeta">
+  <div class="tarjeta-cabecera"><h2>{{ 'Tareas y entregables' if area.plantilla == 'general' else 'Tareas' }}</h2></div>
+  {{ form_tarea_rapida(token, [], area.id) }}
+  {% if abiertas %}<div class="lista" style="margin-top:10px">{% for t in abiertas %}{{ fila_tarea(t, token, hoy, urgencia, mostrar_area=false) }}{% endfor %}</div>
+  {% else %}<p class="vacio">Sin tareas pendientes en esta área.</p>{% endif %}
+  {% if hechas %}<details style="margin-top:10px"><summary class="sutil" style="cursor:pointer">Completadas recientemente ({{ hechas|length }})</summary>
+    <div class="lista">{% for t in hechas %}{{ fila_tarea(t, token, hoy, urgencia, mostrar_area=false) }}{% endfor %}</div></details>{% endif %}
+</section>
+{% endblock %}

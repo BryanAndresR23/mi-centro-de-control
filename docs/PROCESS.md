@@ -109,7 +109,23 @@ How each step was solved:
 5. **Production check:** the login page asks for 2FA, static files load, HSTS is set, and a wrong password returns
    401. That last check also confirms that the database and tables work.
 
-### 6. Lessons
+### 6. Phases 1b–4, built in one stretch
+
+After Phase 1a went live, the remaining phases were built back to back. All new tables went into one Alembic
+migration (`fases 1b a 4`); every new module got pure functions with tests, then routes, then templates.
+
+| Phase | What was built | Key decisions |
+|---|---|---|
+| 1b | Budgets, savings goals, bills and subscriptions, full dashboard | Budgets keep their history when the amount changes; a "Paid" tap records the movement and advances the due date (31st → 28th → 31st); an alert appears when a single expense crosses 80 % or 100 % |
+| 2 | Receipt photos with Claude, SRI XML, CSV/XLSX import | Photos are resized in the browser; Claude returns structured JSON; the SRI access key is validated (modulo 11) and the authorized XML replaces the estimates; imports detect duplicates with a row hash; categories are learned from confirmations |
+| 3 | Areas with templates, tasks, Today view | One `areas` table with a template field makes new areas trivial; Today sorts by urgency then priority; recurring tasks spawn the next one when completed |
+| 4 | Advisor, weekly review, Telegram reminders | The advisor only *phrases* facts computed in Python; tips citing unknown facts are discarded; a daily Vercel Cron call is protected with `CRON_SECRET` and de-duplicated per day and per alert |
+
+Bugs found by the new tests and screenshots: a CSV with decimal commas fooled the delimiter sniffer (replaced with a
+"most consistent column count" heuristic); a Jinja `d.items` lookup hit the dict method instead of the key; the
+advisor suggested cutting groceries (now treated as non-discretionary).
+
+### 7. Lessons
 
 - **Secrets in screenshots are secrets.** A 2FA QR code was shared in a screenshot. Re-running the setup window
   rotates the secret, and the docs now warn about it.
@@ -226,7 +242,26 @@ Así se resolvió cada paso:
 5. **Verificación en producción:** la página de acceso pide 2FA, los archivos estáticos cargan, HSTS está activo y
    una contraseña incorrecta devuelve 401. Esto último también confirma que la base y las tablas funcionan.
 
-### 6. Lecciones
+### 6. Fases 1b a 4, construidas de corrido
+
+Con la Fase 1a en producción, las demás fases se construyeron seguidas. Todas las tablas nuevas entraron en una
+sola migración de Alembic (`fases 1b a 4`). Cada módulo nuevo se hizo en el mismo orden: primero funciones puras
+con sus pruebas, luego rutas y al final plantillas.
+
+| Fase | Qué se construyó | Decisiones clave |
+|---|---|---|
+| 1b | Presupuestos, metas de ahorro, deudas y suscripciones, dashboard completo | Los presupuestos guardan su historia cuando cambia el monto; «Pagado» registra el movimiento y avanza el vencimiento (31 → 28 → 31); aparece un aviso cuando un gasto cruza el 80 % o el 100 % |
+| 2 | Fotos de recibos con Claude, XML del SRI, importación CSV/XLSX | Las fotos se reducen en el navegador; Claude devuelve JSON estructurado; la clave de acceso se valida (módulo 11) y el XML autorizado reemplaza lo estimado; la importación detecta duplicados con una huella por fila; las categorías se aprenden de las confirmaciones |
+| 3 | Áreas con plantillas, tareas, vista Hoy | Una sola tabla `areas` con su plantilla hace que crear áreas sea trivial; Hoy ordena por urgencia y luego prioridad; las tareas recurrentes crean la siguiente al completarse |
+| 4 | Asesor, revisión semanal, recordatorios por Telegram | El asesor solo *redacta* hechos calculados en Python; se descartan los consejos que citan hechos inexistentes; el cron diario de Vercel va protegido con `CRON_SECRET` y no se repite ni por día ni por alerta |
+
+Errores que encontraron las pruebas nuevas y las capturas:
+- Un CSV con comas decimales confundía la detección del separador. Se reemplazó por una heurística que elige el
+  separador con la cantidad de columnas más constante.
+- En una plantilla, `d.items` devolvía el método del diccionario en lugar de la clave.
+- El asesor sugería recortar el supermercado; ahora se trata como gasto no discrecional.
+
+### 7. Lecciones
 
 - **Un secreto en una captura sigue siendo un secreto.** Se compartió un QR de 2FA en una captura. Volver a
   ejecutar la ventana de configuración cambia el secreto, y la documentación ahora lo advierte.

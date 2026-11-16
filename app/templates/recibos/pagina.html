@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block titulo %}Recibos · Mi Centro de Control{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <h1>Fotos de recibos y facturas</h1>
+  <a class="boton boton-sec boton-chico" href="/movimientos/nuevo">Registrar a mano</a>
+</div>
+
+<section class="tarjeta formulario">
+  <form id="form-recibos" method="post" action="/recibos/subir" enctype="multipart/form-data" class="formulario">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}">
+    <label class="zona-subida" for="archivos">
+      <span class="grande" aria-hidden="true">📷</span>
+      <b>Toma o elige fotos de recibos, facturas o capturas de transferencias</b>
+      <span class="sutil">También puedes subir el XML de la factura electrónica que te llega por correo (exacto y sin costo de IA). Puedes elegir varios a la vez.</span>
+      <input id="archivos" name="archivos" type="file" accept="image/*,.xml,text/xml,application/xml" multiple>
+    </label>
+    <ul id="progreso-subida" class="progreso" aria-live="polite"></ul>
+    <noscript><button class="boton" type="submit">Subir</button></noscript>
+  </form>
+  {% if not ia_activa %}
+    <div class="aviso aviso-alerta">⚠ La lectura automática de fotos está desactivada: falta la clave <code>ANTHROPIC_API_KEY</code> en Vercel. Los XML del SRI sí se leen, y las fotos quedan guardadas para que llenes los datos a mano.</div>
+  {% else %}
+    <p class="sutil">Lectura con {{ modelo }}. Las fotos se reducen en tu celular antes de subirlas.</p>
+  {% endif %}
+</section>
+
+{% if pendientes %}
+<div class="encabezado">
+  <h2>Por confirmar ({{ pendientes|length }})</h2>
+  <form method="post" action="/recibos/confirmar-todos" data-confirmar="¿Guardar todos los comprobantes leídos con sus datos sugeridos?">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}">
+    <button class="boton boton-chico" type="submit">Confirmar todos</button>
+  </form>
+</div>
+{% for e in pendientes %}{% set d = e.datos or {} %}
+<section class="tarjeta recibo">
+  <div class="recibo-vista">
+    {% if e.adjunto and e.adjunto.tipo_mime.startswith('image/') %}
+      <a href="/recibos/{{ e.id }}/archivo" target="_blank" rel="noopener"><img src="/recibos/{{ e.id }}/archivo" alt="Foto del comprobante" loading="lazy"></a>
+    {% else %}
+      <div class="recibo-xml">🧾 XML<br><span class="sutil">{{ e.adjunto.nombre_archivo if e.adjunto else '' }}</span></div>
+    {% endif %}
+    <div class="recibo-etiquetas">
+      {% if d.fuente_valores == 'sri' %}<span class="estado estado-bueno">✓ Valores oficiales del SRI</span>{% endif %}
+      {% if e.estado == 'error' %}<span class="estado estado-critico">⛔ No se pudo leer</span>{% endif %}
+      {% for aviso in d.avisos or [] %}<span class="estado estado-aviso">⚠ {{ aviso }}</span>{% endfor %}
+    </div>
+  </div>
+  <form method="post" action="/recibos/{{ e.id }}/confirmar" class="formulario">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}">
+    <div class="dos-columnas">
+      <div class="campo"><label>Total</label><input name="monto" type="text" inputmode="decimal" value="{{ d.total or '' }}" placeholder="0.00"></div>
+      <div class="campo"><label>Fecha</label><input name="fecha" type="date" value="{{ d.fecha or '' }}"></div>
+    </div>
+    <div class="campo"><label>Comercio</label><input name="comercio" type="text" maxlength="120" value="{{ d.comercio or '' }}"></div>
+    <div class="dos-columnas">
+      <div class="campo"><label>Categoría</label>
+        <select name="categoria_gasto">{% for c in categorias %}<option value="{{ c.id }}" {{ 'selected' if d.categoria_id == c.id }}>{{ c.etiqueta }}</option>{% endfor %}</select></div>
+      <div class="campo"><label>Pagado con</label>
+        <select name="cuenta_id">{% for c in cuentas %}<option value="{{ c.id }}" {{ 'selected' if c.id == cuenta_defecto }}>{{ c.nombre }}</option>{% endfor %}</select></div>
+    </div>
+    <details class="extra">
+      <summary>Datos de la factura</summary>
+      <div class="formulario">
+        <div class="dos-columnas">
+          <div class="campo"><label>Subtotal</label><input name="subtotal" type="text" inputmode="decimal" value="{{ d.subtotal or '' }}"></div>
+          <div class="campo"><label>IVA</label><input name="iva" type="text" inputmode="decimal" value="{{ d.iva or '' }}"></div>
+        </div>
+        <div class="campo"><label>RUC</label><input name="ruc_emisor" type="text" inputmode="numeric" maxlength="13" value="{{ d.ruc or '' }}"></div>
+        <div class="campo"><label>Clave de acceso</label><input name="clave_acceso" type="text" inputmode="numeric" maxlength="60" value="{{ d.clave_acceso or '' }}"></div>
+        {% if d.get('items') %}<p class="sutil">Detalle: {{ d.get('items')|join(', ') }}</p>{% endif %}
+      </div>
+    </details>
+    <label class="casilla"><input type="checkbox" name="deducible" value="1" {{ 'checked' if d.deducible }}><span>Gasto personal deducible (factura a tu cédula)</span></label>
+    <div class="acciones">
+      <button class="boton" type="submit">Guardar gasto</button>
+      <button class="boton boton-sec" type="submit" formaction="/recibos/{{ e.id }}/descartar" formnovalidate>Descartar</button>
+    </div>
+  </form>
+</section>
+{% endfor %}
+{% endif %}
+{% endblock %}

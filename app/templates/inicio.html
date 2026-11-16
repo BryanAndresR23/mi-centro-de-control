@@ -1,16 +1,16 @@
 {% extends "base.html" %}
-{% from "_macros.html" import icono, fila_movimiento, delta %}
+{% from "_macros.html" import icono, fila_movimiento, delta, barra_presupuesto, fila_pago %}
 {% block titulo %}Inicio · Mi Centro de Control{% endblock %}
 {% block scripts %}<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>{% endblock %}
 {% block contenido %}
 
 <div class="encabezado">
   <div class="navegador-mes">
-    <a href="/?mes={{ mes_anterior }}" aria-label="Mes anterior">{{ icono("izq") }}</a>
+    <a href="/finanzas?mes={{ mes_anterior }}" aria-label="Mes anterior">{{ icono("izq") }}</a>
     <h1>{{ titulo_mes }}</h1>
-    <a href="/?mes={{ mes_siguiente }}" aria-label="Mes siguiente">{{ icono("der") }}</a>
+    <a href="/finanzas?mes={{ mes_siguiente }}" aria-label="Mes siguiente">{{ icono("der") }}</a>
   </div>
-  {% if not es_mes_actual %}<a class="boton boton-sec boton-chico" href="/">Ir a este mes</a>{% endif %}
+  {% if not es_mes_actual %}<a class="boton boton-sec boton-chico" href="/finanzas">Ir a este mes</a>{% endif %}
 </div>
 
 {% if sin_cuentas %}
@@ -53,6 +53,52 @@
     <span class="delta">Tienes {{ activos|usd }} · Debes {{ pasivos|usd }}</span>
   </a>
 </section>
+
+<div class="rejilla-2">
+  <section class="tarjeta">
+    <div class="tarjeta-cabecera">
+      <h2>Presupuestos</h2>
+      <a href="/presupuestos?mes={{ mes_valor }}">Ver todos</a>
+    </div>
+    {% if presupuestos %}
+      <div class="lista-presupuestos">
+        {% for e, cat in presupuestos[:5] %}{{ barra_presupuesto(e, cat, es_mes_actual, enlace="/presupuestos?mes=" ~ mes_valor) }}{% endfor %}
+      </div>
+    {% else %}
+      <div class="vacio"><p>Ponle un tope mensual a tus categorías y te aviso al 80 % y al 100 %.</p>
+        <a class="boton boton-sec boton-chico" href="/presupuestos/nuevo">Crear presupuesto</a></div>
+    {% endif %}
+  </section>
+
+  <section class="tarjeta">
+    <div class="tarjeta-cabecera">
+      <h2>Próximos pagos</h2>
+      <a href="/recurrentes">Ver todos</a>
+    </div>
+    {% if pagos %}
+      <div class="lista">{% for p, r in pagos %}{{ fila_pago(p, r, csrf_token(request)) }}{% endfor %}</div>
+    {% else %}
+      <div class="vacio"><p>Sin vencimientos en los próximos 14 días.</p>
+        <a class="boton boton-sec boton-chico" href="/recurrentes/nuevo">Agregar pago fijo</a></div>
+    {% endif %}
+  </section>
+</div>
+
+{% if metas %}
+<section class="tarjeta">
+  <div class="tarjeta-cabecera"><h2>Metas de ahorro</h2><a href="/metas">Ver todas</a></div>
+  <div class="lista-presupuestos">
+    {% for m, p in metas %}
+    <a class="presupuesto" href="/metas">
+      <span class="nombre">{{ m.icono or '🎯' }} {{ m.nombre }}</span>
+      <span class="cifra">{% if p.cumplida %}<span class="estado estado-bueno">✓ cumplida</span>{% else %}<span class="estado">{{ p.pct|pct }}</span>{% endif %}</span>
+      <span class="pista" aria-hidden="true"><span class="relleno {{ 'nivel-cumplida' if p.cumplida }}" style="display:block; width: {{ [p.pct * 100, 100]|min|round(1) }}%"></span></span>
+      <span class="detalle-presupuesto">{{ p.total|usd }} de {{ p.objetivo|usd }}{% if p.fecha_estimada and not p.cumplida %} · llegas en {{ p.meses_estimados }} mes{{ 'es' if p.meses_estimados != 1 }}{% endif %}</span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
 
 <div class="rejilla-2">
   <section class="tarjeta">

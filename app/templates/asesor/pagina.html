@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block titulo %}Asesor · Mi Centro de Control{% endblock %}
+{% block contenido %}
+<div class="encabezado"><h1>Asesor y revisión semanal</h1><a class="boton boton-sec boton-chico" href="/mas">Volver</a></div>
+
+<section class="tarjeta">
+  <p class="sutil">Los números los calcula el código con tus datos reales; {% if ia_activa %}Claude ({{ modelo }}) solo los redacta como consejos y debe citar el hecho del que sale cada uno.{% else %}sin la clave <code>ANTHROPIC_API_KEY</code> verás los hechos y consejos básicos, sin redacción con IA.{% endif %}
+    El lunes se generan solos el análisis semanal y la revisión; el día 1, el mensual.</p>
+  <div class="acciones" style="margin-top:10px">
+    {% for t, nombre in tipos.items() %}
+    <form method="post" action="/asesor/generar/{{ t }}"><input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}">
+      <button class="boton {{ '' if loop.first else 'boton-sec' }} boton-chico" type="submit">Generar {{ nombre|lower }}</button></form>
+    {% endfor %}
+  </div>
+</section>
+
+<div class="rejilla-2">
+{% for t, nombre in tipos.items() %}{% set i = ultimos[t] %}
+  <section class="tarjeta">
+    <div class="tarjeta-cabecera"><h2>{{ nombre }}</h2>{% if i %}<a href="/asesor/informe/{{ i.id }}">Ver completo</a>{% endif %}</div>
+    {% if i %}<p class="sutil">{{ i.periodo }}</p><p>{{ i.texto }}</p>
+      {% for c in (i.hechos or {}).get('consejos', [])[:2] %}<div class="consejo"><h3>{{ c.titulo }}</h3><p class="sutil">{{ c.detalle }}</p></div>{% endfor %}
+    {% else %}<p class="vacio">Aún no se ha generado.</p>{% endif %}
+  </section>
+{% endfor %}
+  <section class="tarjeta">
+    <div class="tarjeta-cabecera"><h2>Recordatorios por Telegram</h2></div>
+    <ul class="hechos">
+      <li>Bot: {{ '✓ configurado' if token_telegram else '⚠ falta TELEGRAM_BOT_TOKEN' }}</li>
+      <li>Tu chat: {{ '✓ configurado' if telegram else '⚠ falta TELEGRAM_CHAT_ID' }}</li>
+      <li>Envío diario 07:00: {{ '✓ CRON_SECRET configurado' if cron else '⚠ falta CRON_SECRET' }}</li>
+    </ul>
+    <div class="acciones" style="margin-top:10px">
+      {% if token_telegram %}<a class="boton boton-sec boton-chico" href="/asesor/telegram/chats">Averiguar mi chat</a>{% endif %}
+      {% if telegram %}<form method="post" action="/asesor/telegram/prueba"><input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}">
+        <button class="boton boton-chico" type="submit">Enviar mensaje de prueba</button></form>{% endif %}
+    </div>
+  </section>
+</div>
+
+{% if historial %}
+<section class="tarjeta">
+  <div class="tarjeta-cabecera"><h2>Historial</h2></div>
+  <div class="lista">{% for i in historial %}
+    <a class="fila" href="/asesor/informe/{{ i.id }}"><span class="mov-icono">{{ '🗓️' if i.tipo == 'revision' else '💡' }}</span>
+      <span class="mov-texto"><span class="mov-titulo">{{ tipos[i.tipo] }} · {{ i.periodo }}</span><span class="mov-detalle">{{ (i.texto or '')|truncate(90) }}</span></span></a>{% endfor %}</div>
+</section>
+{% endif %}
+{% endblock %}

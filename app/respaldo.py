@@ -6,6 +6,7 @@ entran en el respaldo sin tocar este archivo.
 
 from __future__ import annotations
 
+import base64
 import csv
 import io
 import json
@@ -14,7 +15,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import Integer, Table, delete, insert, select, text, update
+from sqlalchemy import JSON, Integer, Table, delete, insert, select, text, update
 from sqlalchemy.orm import Session
 
 from . import models  # noqa: F401  (registra las tablas en Base.metadata)
@@ -42,6 +43,8 @@ def _a_json(valor: Any) -> Any:
         return str(valor)
     if isinstance(valor, (date, datetime)):
         return valor.isoformat()
+    if isinstance(valor, (bytes, bytearray, memoryview)):
+        return base64.b64encode(bytes(valor)).decode("ascii")
     return valor
 
 
@@ -80,7 +83,12 @@ def a_zip(datos: dict) -> bytes:
             escritor = csv.writer(salida, lineterminator="\r\n")
             escritor.writerow(columnas)
             for fila in filas:
-                escritor.writerow(["" if fila.get(c) is None else fila.get(c) for c in columnas])
+                escritor.writerow([
+                    "" if fila.get(c) is None
+                    else json.dumps(fila[c], ensure_ascii=False) if isinstance(fila.get(c), (dict, list))
+                    else fila.get(c)
+                    for c in columnas
+                ])
             # Con BOM para que Excel reconozca las tildes
             archivo.writestr(f"{nombre}.csv", "﻿" + salida.getvalue())
         archivo.writestr("LEEME.txt", LEEME)
@@ -113,11 +121,15 @@ def leer_archivo(contenido: bytes) -> dict:
 def _convertir(columna, valor: Any) -> Any:
     if valor is None:
         return None
+    if isinstance(columna.type, JSON):
+        return valor
     try:
         tipo = columna.type.python_type
     except NotImplementedError:
         return valor
     try:
+        if tipo is bytes:
+            return base64.b64decode(str(valor))
         if tipo is Decimal:
             return Decimal(str(valor))
         if tipo is datetime:

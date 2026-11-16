@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block titulo %}{{ tipos[informe.tipo] }} · Mi Centro de Control{% endblock %}
+{% block contenido %}
+{% set datos = informe.hechos or {} %}
+<div class="encabezado"><h1>{{ tipos[informe.tipo] }}</h1><a class="boton boton-sec boton-chico" href="/asesor">Volver</a></div>
+<section class="tarjeta">
+  <p class="sutil">{{ informe.periodo }} · {{ 'redactado con ' ~ informe.modelo if informe.modelo else 'hechos calculados, sin IA' }}</p>
+  <p style="margin-top:8px; font-size:1.05rem">{{ informe.texto }}</p>
+</section>
+{% if datos.get('prioridades') %}
+<section class="tarjeta"><h2>Lo que te recomiendo priorizar</h2>
+  <ol class="hechos" style="margin-top:8px">{% for p in datos.prioridades %}<li>{{ p }}</li>{% endfor %}</ol></section>
+{% endif %}
+<section class="tarjeta">
+  <h2>Consejos</h2>
+  {% for c in datos.get('consejos', []) %}
+    <div class="consejo"><h3>{{ c.titulo }}</h3><p>{{ c.detalle }}</p>
+      <p class="sutil">Basado en: {{ c.hechos|join(', ') }}{% if c.ahorro_mensual_usd %} · ahorro estimado {{ c.ahorro_mensual_usd|usd }}/mes{% endif %}</p></div>
+  {% else %}<p class="vacio">Sin consejos para este período.</p>{% endfor %}
+</section>
+<section class="tarjeta">
+  <h2>Hechos calculados</h2>
+  <ul class="hechos" style="margin-top:8px">{% for x in datos.get('hechos', []) %}<li><b>{{ x.id }}</b> · {{ x.texto }}</li>{% endfor %}</ul>
+</section>
+{% endblock %}

@@ -23,6 +23,32 @@ está en el [README](../README.md).
 3. **Revisión:** revisa el **Inicio** al final del mes.
 4. **Respaldo:** descárgalo una vez al mes en *Más → Respaldo*.
 
+## Funciones de las fases 1b a 4
+
+| Dónde | Qué haces |
+|---|---|
+| **Hoy** (inicio) | Ves tareas vencidas y de hoy, la semana, pagos próximos, alertas de presupuesto, hábitos y fechas de becas y postulaciones. Agregas tareas rápidas y las marcas con el círculo |
+| **Más → Presupuestos** | Pones un tope mensual por categoría (ves tu promedio de 3 meses como guía). Al registrar un gasto que cruza el 80 % o el 100 %, aparece un aviso |
+| **Más → Metas de ahorro** | Creas la meta y, al registrar un **Ahorro**, eliges la meta. La tarjeta muestra el ritmo, la fecha estimada y la cuota necesaria |
+| **Más → Deudas y suscripciones** | Registras pagos fijos. **Pagado** crea el movimiento y pasa al próximo vencimiento. Una vez al mes respondes «¿la usaste?» |
+| **➕ → 📷 Desde foto** | Tomas o eliges una o varias fotos, o subes el XML de la factura. Revisas los datos y pulsas **Guardar gasto** o **Confirmar todos** |
+| **Más → Importar estado de cuenta** | Subes CSV/XLSX, confirmas las columnas, desmarcas filas y pulsas **Importar**. Lo ya importado no se duplica |
+| **Pendientes** | Abres un área y usas su sección: registrar entrenamiento y rutina, sesiones de estudio, postulaciones, becas con checklist, metas con hitos. **+ Área** crea una nueva |
+| **Más → Asesor** | Generas el análisis semanal o mensual o la revisión semanal. Cada consejo dice en qué hecho se basa |
+
+### Activar la IA y los recordatorios
+
+1. **IA:** crea una clave en <https://console.anthropic.com> (prepago). Por defecto se usa `claude-opus-5-5` (unos
+   3-5 centavos por foto); con `MODELO_IA=claude-haiku-5-5` cuesta mucho menos.
+2. **Telegram, el bot:** en Telegram, escríbele a **@BotFather** y envía `/newbot`. Copia el token.
+3. **Telegram, tu chat:** escríbele cualquier mensaje a tu bot. Luego, con el token ya guardado en Vercel, abre
+   **Más → Asesor → Averiguar mi chat** para ver tu `TELEGRAM_CHAT_ID`.
+4. **Guardar las claves:** ejecuta `scripts\configurar_vercel.py`. Pega el token de Vercel y, en el paso 4, la
+   clave de Anthropic, el token del bot y tu chat ID. Deja vacíos Neon, la contraseña y el QR para conservarlos.
+   La ventana genera `CRON_SECRET` y vuelve a desplegar.
+5. **Probar:** en **Más → Asesor**, pulsa **Enviar mensaje de prueba**. Desde ese momento, cada día a las 07:00
+   llega el resumen. Los lunes trae además el análisis semanal y la revisión, y el día 1, el mensual.
+
 ## Publicar sin la ventana (panel de Vercel)
 
 1. **Neon:**

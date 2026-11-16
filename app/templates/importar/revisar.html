@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block titulo %}Revisar importación · Mi Centro de Control{% endblock %}
+{% block contenido %}
+<div class="encabezado"><h1>Revisar {{ filas|length }} filas</h1><a class="boton boton-sec boton-chico" href="/importar">Cancelar</a></div>
+<form method="post" class="tarjeta formulario">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}">
+  <p class="sutil">Cuenta: <b>{{ cuenta.nombre }}</b>.{% if duplicados %} {{ duplicados }} filas ya estaban importadas: vienen desmarcadas.{% endif %}
+    Desmarca lo que no quieras (por ejemplo, pagos de tarjeta o movimientos entre tus cuentas, que conviene registrar como transferencias).</p>
+  <div class="tabla-desplazable"><table class="tabla-importar">
+    <thead><tr><th></th><th>Fecha</th><th>Descripción</th><th class="num">Monto</th><th>Categoría</th></tr></thead>
+    <tbody>
+    {% for e in filas %}{% set d = e.datos %}
+      <tr class="{{ 'duplicada' if d.duplicado }}">
+        <td><input type="checkbox" name="incluir" value="{{ e.id }}" aria-label="Incluir" {{ '' if d.duplicado else 'checked' }}></td>
+        <td class="num">{{ d.fecha }}</td>
+        <td>{{ d.descripcion }}{% if d.duplicado %} <span class="etiqueta">ya importada</span>{% endif %}</td>
+        <td class="num {{ 'bueno' if d.tipo == 'ingreso' }}">{{ d.monto|float|round(2) }}</td>
+        <td><select name="categoria_{{ e.id }}" aria-label="Categoría">
+          {% for c in (categorias_gasto if d.tipo == 'gasto' else categorias_ingreso) %}<option value="{{ c.id }}" {{ 'selected' if d.categoria_id == c.id }}>{{ c.etiqueta }}</option>{% endfor %}
+        </select></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  <div class="acciones"><button class="boton" type="submit">Importar seleccionadas</button></div>
+</form>
+{% endblock %}

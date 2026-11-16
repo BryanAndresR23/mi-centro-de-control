@@ -54,10 +54,10 @@ Neon PostgreSQL (datos + fotos comprimidas)
 | Fase | Contenido | Estado |
 |---|---|---|
 | 1a | Login con 2FA, cuentas, categorías, movimientos, transferencias y ahorros, dashboard, respaldo, datos de ejemplo, despliegue | **Hecha** y en producción (Vercel + Neon, uso personal) |
-| 1b | Presupuestos (alertas al 80 % y al 100 %), metas de ahorro, deudas y suscripciones, dashboard completo | Pendiente |
-| 2 | Fotos de recibos (sueltas o en lote) con Claude, XML del SRI, importación CSV/Excel con detección de duplicados | Pendiente |
-| 3 | Áreas con sus plantillas (trabajo, fitness, inglés, SQL, postulaciones, becas, metas), vista Hoy | Pendiente |
-| 4 | Asesor semanal y mensual, revisión semanal, recordatorios por Telegram | Pendiente |
+| 1b | Presupuestos (alertas al 80 % y al 100 %), metas de ahorro, deudas y suscripciones, dashboard completo | **Hecha** |
+| 2 | Fotos de recibos (sueltas o en lote) con Claude, XML del SRI, importación CSV/Excel con detección de duplicados | **Hecha** (la lectura de fotos se activa con `ANTHROPIC_API_KEY`) |
+| 3 | Áreas con sus plantillas (trabajo, fitness, inglés, SQL, postulaciones, becas, metas), vista Hoy | **Hecha** |
+| 4 | Asesor semanal y mensual, revisión semanal, recordatorios por Telegram | **Hecha** (Telegram se activa con el bot y `CRON_SECRET`) |
 
 ## Lo que necesitaré de ti
 

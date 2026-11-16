@@ -21,14 +21,17 @@ from ..finanzas.calculos import (
     serie_patrimonio,
     variacion,
 )
+from ..finanzas.planificacion import estado_presupuestos, proximos_pagos
 from ..finanzas.servicio import (
     asegurar_categorias_base,
     cuentas_para_calculo,
     listar_categorias,
     listar_cuentas,
     movs_para_calculo,
+    presupuestos_datos,
+    progreso_metas,
 )
-from ..models import Movimiento
+from ..models import Movimiento, Recurrente
 from ..seguridad import requiere_login
 from ..tiempo import MESES_CORTOS, hoy, meses_hasta, nombre_mes, parse_mes, primer_dia, sumar_meses, ultimo_dia
 from ..web import render
@@ -38,7 +41,7 @@ router = APIRouter(dependencies=[Depends(requiere_login)])
 MESES_TENDENCIA = 12
 
 
-@router.get("/")
+@router.get("/finanzas")
 def inicio(request: Request, mes: str | None = None, bd: Session = Depends(obtener_bd)):
     asegurar_categorias_base(bd)
     hoy_ = hoy()
@@ -118,12 +121,25 @@ def inicio(request: Request, mes: str | None = None, bd: Session = Depends(obten
         ).unique()
     )
 
+    # Fase 1b: presupuestos del mes, metas y próximos pagos
+    estados = estado_presupuestos(presupuestos_datos(bd), movs, anio, num_mes, padre_de, hoy_)
+    activos_rec = list(bd.scalars(
+        select(Recurrente).options(joinedload(Recurrente.cuenta), joinedload(Recurrente.cuenta_destino))
+        .where(Recurrente.activa.is_(True))
+    ).unique())
+    por_id = {r.id: r for r in activos_rec}
+    pagos = [(p, por_id[p.recurrente_id]) for p in proximos_pagos(
+        ((r.id, r.proxima_fecha, r.monto) for r in activos_rec), hoy_, 14)]
+
     a_sig, m_sig = sumar_meses(anio, num_mes, 1)
     return render(
         request,
         "inicio.html",
         {
-            "seccion": "inicio",
+            "seccion": "finanzas",
+            "presupuestos": [(e, categorias.get(e.categoria_id)) for e in estados],
+            "metas": progreso_metas(bd, hoy_),
+            "pagos": pagos,
             "titulo_mes": nombre_mes(anio, num_mes),
             "es_mes_actual": es_mes_actual,
             "hoy": hoy_,

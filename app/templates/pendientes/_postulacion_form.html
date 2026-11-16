@@ -1,0 +1,22 @@
+<form method="post" action="/pendientes/postulaciones{{ '/' ~ p.id if p else '' }}" class="formulario" style="margin-top:10px">
+  <input type="hidden" name="csrf_token" value="{{ token }}">
+  <div class="dos-columnas">
+    <div class="campo"><label>Empresa</label><input name="empresa" type="text" maxlength="120" value="{{ p.empresa if p else '' }}" required></div>
+    <div class="campo"><label>Cargo</label><input name="cargo" type="text" maxlength="160" value="{{ p.cargo if p else '' }}" required></div>
+  </div>
+  <div class="dos-columnas">
+    <div class="campo"><label>Estado</label><select name="estado">{% for k, v in estados.items() %}<option value="{{ k }}" {{ 'selected' if p and p.estado == k }}>{{ v }}</option>{% endfor %}</select></div>
+    <div class="campo"><label>Fecha de postulación</label><input name="fecha_postulacion" type="date" value="{{ p.fecha_postulacion.isoformat() if p else hoy.isoformat() }}"></div>
+  </div>
+  <div class="dos-columnas">
+    <div class="campo"><label>Próximo paso</label><input name="proximo_paso" type="text" maxlength="200" value="{{ p.proximo_paso or '' if p else '' }}" placeholder="Entrevista técnica, enviar prueba…"></div>
+    <div class="campo"><label>Fecha del próximo paso</label><input name="fecha_proximo_paso" type="date" value="{{ p.fecha_proximo_paso.isoformat() if p and p.fecha_proximo_paso else '' }}"></div>
+  </div>
+  <div class="dos-columnas">
+    <div class="campo"><label>Enlace</label><input name="enlace" type="url" maxlength="500" value="{{ p.enlace or '' if p else '' }}" placeholder="https://"></div>
+    <div class="campo"><label>Salario</label><input name="salario" type="text" maxlength="60" value="{{ p.salario or '' if p else '' }}"></div>
+  </div>
+  <div class="campo"><label>Notas</label><textarea name="notas" maxlength="3000">{{ p.notas or '' if p else '' }}</textarea></div>
+  <div class="acciones"><button class="boton boton-chico" type="submit">Guardar</button>
+    {% if p and p.enlace %}<a class="boton boton-sec boton-chico" href="{{ p.enlace }}" target="_blank" rel="noopener noreferrer">Abrir oferta</a>{% endif %}</div>
+</form>

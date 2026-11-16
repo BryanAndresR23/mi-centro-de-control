@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_macros.html" import error, clase_campo %}
+{% block titulo %}Tarea · Mi Centro de Control{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <h1>Editar tarea</h1>
+  <a class="boton boton-sec boton-chico" href="/pendientes/area/{{ tarea.area_id }}">Cancelar</a>
+</div>
+<form method="post" class="tarjeta formulario" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}">
+  <div class="{{ clase_campo(errores, 'titulo') }}"><label for="titulo">Tarea</label>
+    <input id="titulo" name="titulo" type="text" maxlength="200" value="{{ valores.titulo or '' }}">{{ error(errores, 'titulo') }}</div>
+  <div class="dos-columnas">
+    <div class="campo"><label for="area_id">Área</label>
+      <select id="area_id" name="area_id">{% for a in areas %}<option value="{{ a.id }}" {{ 'selected' if valores.area_id == a.id|string }}>{{ a.icono or '' }} {{ a.nombre }}</option>{% endfor %}</select></div>
+    <div class="campo"><label for="estado">Estado</label>
+      <select id="estado" name="estado">{% for k, v in estados.items() %}<option value="{{ k }}" {{ 'selected' if valores.estado == k }}>{{ v }}</option>{% endfor %}</select></div>
+  </div>
+  <div class="dos-columnas">
+    <div class="{{ clase_campo(errores, 'fecha_limite') }}"><label for="fecha_limite">Fecha límite</label>
+      <input id="fecha_limite" name="fecha_limite" type="date" value="{{ valores.fecha_limite or '' }}">{{ error(errores, 'fecha_limite') }}</div>
+    <div class="campo"><label for="prioridad">Prioridad</label>
+      <select id="prioridad" name="prioridad">{% for k, v in prioridades.items() %}<option value="{{ k }}" {{ 'selected' if valores.prioridad == k|string }}>{{ v }}</option>{% endfor %}</select></div>
+  </div>
+  <div class="dos-columnas">
+    <div class="campo"><label for="recurrencia">Se repite</label>
+      <select id="recurrencia" name="recurrencia">{% for k, v in [('', 'No'), ('diaria', 'Cada día'), ('semanal', 'Cada semana'), ('mensual', 'Cada mes')] %}<option value="{{ k }}" {{ 'selected' if valores.recurrencia == k }}>{{ v }}</option>{% endfor %}</select></div>
+    <div class="campo"><label for="meta_personal_id">Hito de la meta</label>
+      <select id="meta_personal_id" name="meta_personal_id"><option value="">—</option>{% for m in metas %}<option value="{{ m.id }}" {{ 'selected' if valores.meta_personal_id == m.id|string }}>{{ m.titulo[:60] }}</option>{% endfor %}</select></div>
+  </div>
+  <div class="campo"><label for="descripcion">Notas</label><textarea id="descripcion" name="descripcion" maxlength="2000">{{ valores.descripcion or '' }}</textarea></div>
+  <div class="acciones"><button class="boton" type="submit">Guardar</button></div>
+</form>
+<form method="post" action="/pendientes/tareas/{{ tarea.id }}/eliminar" data-confirmar="¿Eliminar esta tarea?">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}">
+  <button class="boton boton-peligro boton-chico" type="submit">Eliminar tarea</button>
+</form>
+{% endblock %}

@@ -5,7 +5,10 @@
 {% set tipo = valores.tipo or 'gasto' %}
 <div class="encabezado">
   <h1>{{ 'Editar movimiento' if movimiento else 'Nuevo movimiento' }}</h1>
-  <a class="boton boton-sec boton-chico" href="{{ '/movimientos?mes=' ~ movimiento.fecha.strftime('%Y-%m') if movimiento else '/movimientos' }}">Cancelar</a>
+  <div class="acciones">
+    {% if not movimiento %}<a class="boton boton-sec boton-chico" href="/recibos">📷 Desde foto</a>{% endif %}
+    <a class="boton boton-sec boton-chico" href="{{ '/movimientos?mes=' ~ movimiento.fecha.strftime('%Y-%m') if movimiento else '/movimientos' }}">Cancelar</a>
+  </div>
 </div>
 
 {% if not cuentas %}
@@ -120,6 +123,17 @@
     <input type="checkbox" name="deducible" value="1" {{ 'checked' if valores.deducible }}>
     <span>Gasto personal deducible (factura a tu cédula)<br><span class="sutil" data-pista-rubro></span></span>
   </label>
+
+  {% if metas %}
+  <div class="{{ clase_campo(errores, 'meta_id') }}">
+    <label for="meta_id"><span class="solo-gasto">Pagado con dinero de una meta (opcional)</span><span class="solo-ingreso">Asignar a una meta (opcional)</span><span class="solo-movimiento-cuentas">Para la meta (opcional)</span></label>
+    <select id="meta_id" name="meta_id">
+      <option value="">— Ninguna —</option>
+      {% for m in metas %}<option value="{{ m.id }}" {{ 'selected' if valores.meta_id == m.id|string }}>{{ m.icono or '🎯' }} {{ m.nombre }}</option>{% endfor %}
+    </select>
+    {{ error(errores, 'meta_id') }}
+  </div>
+  {% endif %}
 
   <div class="{{ clase_campo(errores, 'nota') }}">
     <label for="nota">Nota</label>

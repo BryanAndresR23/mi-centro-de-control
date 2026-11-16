@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "_macros.html" import tarjeta_meta %}
+{% block titulo %}Metas de ahorro · Mi Centro de Control{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <h1>Metas de ahorro</h1>
+  <a class="boton boton-chico" href="/metas/nueva">+ Meta</a>
+</div>
+{% if activas %}
+  <div class="rejilla-2">{% for m, p in activas %}{{ tarjeta_meta(m, p, csrf_token(request)) }}{% endfor %}</div>
+{% else %}
+  <section class="tarjeta vacio">
+    <span class="grande" aria-hidden="true">🎯</span>
+    <p>Crea una meta (fondo de emergencia, maestría, viaje…) y asígnale tus ahorros: verás cuánto llevas y cuándo llegarás.</p>
+    <a class="boton" href="/metas/nueva">Crear mi primera meta</a>
+  </section>
+{% endif %}
+{% if archivadas %}
+<details class="tarjeta">
+  <summary class="seccion-titulo" style="cursor:pointer">Archivadas ({{ archivadas|length }})</summary>
+  <div class="rejilla-2" style="margin-top:12px">{% for m, p in archivadas %}{{ tarjeta_meta(m, p, csrf_token(request)) }}{% endfor %}</div>
+</details>
+{% endif %}
+<p class="sutil">Para aportar a una meta, registra un <b>Ahorro</b> (o una transferencia) y elige la meta. Si gastas dinero de la meta, elígela también en el gasto y se descuenta.</p>
+{% endblock %}

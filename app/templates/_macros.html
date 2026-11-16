@@ -39,6 +39,111 @@ campo{% if errores.get(campo) %} con-error{% endif %}
 </a>
 {%- endmacro %}
 
+{% macro nivel_etiqueta(nivel, pct) -%}
+{%- if nivel == 'excedido' -%}<span class="estado estado-critico">⛔ {{ pct|pct }}</span>
+{%- elif nivel == 'alerta' -%}<span class="estado estado-aviso">⚠ {{ pct|pct }}</span>
+{%- else -%}<span class="estado">{{ pct|pct }}</span>{%- endif -%}
+{%- endmacro %}
+
+{% macro barra_presupuesto(e, cat, es_mes_actual, enlace) -%}
+<a class="presupuesto" href="{{ enlace }}">
+  <span class="nombre">{{ cat.icono if cat and cat.icono }} {{ cat.nombre if cat else 'Categoría' }}</span>
+  <span class="cifra">{{ nivel_etiqueta(e.nivel, e.pct) }}</span>
+  <span class="pista" aria-hidden="true"><span class="relleno nivel-{{ e.nivel }}" style="display:block; width: {{ [e.pct * 100, 100]|min|round(1) }}%"></span></span>
+  <span class="detalle-presupuesto">
+    {{ e.gastado|usd }} de {{ e.monto|usd }} ·
+    {% if e.restante >= 0 %}quedan {{ e.restante|usd }}{% else %}te pasaste {{ (-e.restante)|usd }}{% endif %}
+    {% if es_mes_actual and e.proyectado is not none and e.proyectado > e.monto %} · a este ritmo llegarás a {{ e.proyectado|usd }}{% endif %}
+  </span>
+</a>
+{%- endmacro %}
+
+{% macro tarjeta_meta(m, p, token) -%}
+<section class="tarjeta meta">
+  <div class="tarjeta-cabecera">
+    <h2>{{ m.icono or '🎯' }} {{ m.nombre }}</h2>
+    <a href="/metas/{{ m.id }}/editar">Editar</a>
+  </div>
+  <div class="meta-cifras"><span class="valor">{{ p.total|usd }}</span><span class="sutil">de {{ p.objetivo|usd }} · {{ p.pct|pct }}</span></div>
+  <div class="pista" aria-hidden="true"><span class="relleno {{ 'nivel-cumplida' if p.cumplida else '' }}" style="display:block; width: {{ [p.pct * 100, 100]|min|round(1) }}%"></span></div>
+  <ul class="meta-detalle">
+    {% if p.cumplida %}
+      <li><span class="estado estado-bueno">✓ Meta cumplida</span></li>
+    {% else %}
+      <li>Te faltan <b>{{ p.faltante|usd }}</b>. Ritmo: {{ p.ritmo_mensual|usd }}/mes (últimos 3 meses).</li>
+      {% if p.fecha_estimada %}<li>A este ritmo llegas en <b>{{ p.meses_estimados }} mes{{ 'es' if p.meses_estimados != 1 }}</b> ({{ p.fecha_estimada|fecha_corta }}).</li>
+      {% else %}<li>Sin aportes recientes: registra un ahorro para estimar la fecha.</li>{% endif %}
+      {% if p.fecha_objetivo %}
+        <li>Para llegar al {{ p.fecha_objetivo|fecha_corta }} necesitas {{ p.cuota_necesaria|usd if p.cuota_necesaria is not none else '—' }}/mes
+          {% if p.en_camino %}<span class="estado estado-bueno">✓ vas a tiempo</span>{% elif p.en_camino is false %}<span class="estado estado-aviso">⚠ vas atrasado</span>{% endif %}</li>
+      {% endif %}
+    {% endif %}
+  </ul>
+  <div class="acciones">
+    {% if m.estado == 'activa' and not p.cumplida %}<a class="boton boton-chico" href="/movimientos/nuevo?tipo=ahorro&amp;meta={{ m.id }}">Aportar</a>{% endif %}
+    <form method="post" action="/metas/{{ m.id }}/archivar"><input type="hidden" name="csrf_token" value="{{ token }}">
+      <button class="boton boton-sec boton-chico" type="submit">{{ 'Archivar' if m.estado == 'activa' else 'Reactivar' }}</button></form>
+  </div>
+</section>
+{%- endmacro %}
+
+{% macro fila_pago(p, r, token) -%}
+<div class="fila">
+  <span class="mov-icono" aria-hidden="true">{% if r.tipo == 'deuda' %}💳{% elif r.tipo == 'suscripcion' %}📺{% elif r.tipo == 'servicio' %}💡{% else %}📌{% endif %}</span>
+  <span class="mov-texto">
+    <span class="mov-titulo">{{ r.nombre }}</span>
+    <span class="mov-detalle">
+      {% if p.estado == 'vencido' %}<span class="estado estado-critico">⛔ venció hace {{ -p.dias }} día{{ 's' if p.dias != -1 }}</span>
+      {% elif p.estado == 'hoy' %}<span class="estado estado-aviso">⚠ vence hoy</span>
+      {% elif p.estado == 'pronto' %}<span class="estado estado-aviso">⚠ en {{ p.dias }} día{{ 's' if p.dias != 1 }}</span>
+      {% else %}{{ p.fecha|fecha_corta }}{% endif %}
+      · {{ r.cuenta.nombre }}{% if r.cuenta_destino %} → {{ r.cuenta_destino.nombre }}{% endif %}
+    </span>
+  </span>
+  <span class="acciones-pago">
+    <span class="monto">{{ r.monto|usd }}</span>
+    <form method="post" action="/recurrentes/{{ r.id }}/pagar" data-confirmar="¿Registrar el pago de «{{ r.nombre }}» por {{ r.monto|usd }} con fecha de hoy?">
+      <input type="hidden" name="csrf_token" value="{{ token }}">
+      <button class="chip" type="submit">Pagado</button>
+    </form>
+  </span>
+</div>
+{%- endmacro %}
+
+{% macro fila_tarea(t, token, hoy, urgencia, mostrar_area=true) -%}
+{% set u = urgencia(t.fecha_limite, hoy) %}
+<div class="fila tarea prioridad-{{ t.prioridad }}">
+  <form method="post" action="/pendientes/tareas/{{ t.id }}/hecha">
+    <input type="hidden" name="csrf_token" value="{{ token }}">
+    <button class="check {{ 'hecho' if t.estado == 'hecha' }}" type="submit" aria-label="Marcar «{{ t.titulo }}» como {{ 'pendiente' if t.estado == 'hecha' else 'hecha' }}">{{ '✓' if t.estado == 'hecha' else '' }}</button>
+  </form>
+  <a class="mov-texto" href="/pendientes/tareas/{{ t.id }}/editar">
+    <span class="mov-titulo">{{ t.titulo }}</span>
+    <span class="mov-detalle">
+      {%- if mostrar_area and t.area %}{{ t.area.icono or '' }} {{ t.area.nombre }} · {% endif -%}
+      {%- if t.prioridad == 1 %}<span class="estado estado-critico">● Alta</span> · {% endif -%}
+      {%- if u == 0 %}<span class="estado estado-critico">⛔ venció {{ t.fecha_limite|fecha_corta }}</span>
+      {%- elif u == 1 %}<span class="estado estado-aviso">⚠ hoy</span>
+      {%- elif t.fecha_limite %}{{ t.fecha_limite|fecha_corta }}{% else %}sin fecha{% endif -%}
+      {%- if t.recurrencia %} · 🔁 {{ t.recurrencia }}{% endif -%}
+    </span>
+  </a>
+</div>
+{%- endmacro %}
+
+{% macro form_tarea_rapida(token, areas, area_id=None, metas=None) -%}
+<form method="post" action="/pendientes/tareas/nueva" class="tarea-rapida">
+  <input type="hidden" name="csrf_token" value="{{ token }}">
+  <input name="titulo" type="text" maxlength="200" placeholder="Nueva tarea…" aria-label="Nueva tarea" required>
+  {% if area_id %}<input type="hidden" name="area_id" value="{{ area_id }}">
+  {% else %}<select name="area_id" aria-label="Área">{% for a in areas %}<option value="{{ a.id }}">{{ a.icono or '' }} {{ a.nombre }}</option>{% endfor %}</select>{% endif %}
+  <input name="fecha_limite" type="date" aria-label="Fecha límite">
+  <select name="prioridad" aria-label="Prioridad"><option value="1">Alta</option><option value="2" selected>Media</option><option value="3">Baja</option></select>
+  {% if metas %}<select name="meta_personal_id" aria-label="Meta"><option value="">Sin meta</option>{% for m, _, _ in metas %}<option value="{{ m.id }}">🎯 {{ m.titulo[:40] }}</option>{% endfor %}</select>{% endif %}
+  <button class="boton boton-chico" type="submit">Agregar</button>
+</form>
+{%- endmacro %}
+
 {% macro delta(valor, sube_es_bueno, referencia) -%}
 {% if valor is not none %}
   {% set sube = valor > 0 %}

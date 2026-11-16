@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% from "_macros.html" import error, clase_campo %}
+{% block titulo %}Pago fijo · Mi Centro de Control{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <h1>{{ 'Editar pago fijo' if recurrente else 'Nuevo pago fijo' }}</h1>
+  <a class="boton boton-sec boton-chico" href="/recurrentes">Cancelar</a>
+</div>
+<form method="post" class="tarjeta formulario" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}">
+  <div class="dos-columnas">
+    <div class="{{ clase_campo(errores, 'nombre') }}">
+      <label for="nombre">Nombre</label>
+      <input id="nombre" name="nombre" type="text" maxlength="80" value="{{ valores.nombre or '' }}" placeholder="Netflix, Arriendo, Préstamo BIESS…">
+      {{ error(errores, 'nombre') }}
+    </div>
+    <div class="{{ clase_campo(errores, 'tipo') }}">
+      <label for="tipo">Tipo</label>
+      <select id="tipo" name="tipo">{% for k, v in tipos.items() %}<option value="{{ k }}" {{ 'selected' if valores.tipo == k }}>{{ v }}</option>{% endfor %}</select>
+    </div>
+  </div>
+  <div class="dos-columnas">
+    <div class="{{ clase_campo(errores, 'monto') }}">
+      <label for="monto">Monto (USD)</label>
+      <input id="monto" name="monto" type="text" inputmode="decimal" value="{{ valores.monto or '' }}">
+      {{ error(errores, 'monto') }}
+    </div>
+    <div class="{{ clase_campo(errores, 'frecuencia') }}">
+      <label for="frecuencia">Frecuencia</label>
+      <select id="frecuencia" name="frecuencia">{% for k, v in frecuencias.items() %}<option value="{{ k }}" {{ 'selected' if valores.frecuencia == k }}>{{ v }}</option>{% endfor %}</select>
+    </div>
+  </div>
+  <div class="dos-columnas">
+    <div class="{{ clase_campo(errores, 'proxima_fecha') }}">
+      <label for="proxima_fecha">Próximo vencimiento</label>
+      <input id="proxima_fecha" name="proxima_fecha" type="date" value="{{ valores.proxima_fecha or '' }}">
+      {{ error(errores, 'proxima_fecha') }}
+    </div>
+    <div class="{{ clase_campo(errores, 'dias_aviso') }}">
+      <label for="dias_aviso">Avisarme con (días)</label>
+      <input id="dias_aviso" name="dias_aviso" type="number" min="0" max="30" value="{{ valores.dias_aviso or '3' }}">
+      {{ error(errores, 'dias_aviso') }}
+    </div>
+  </div>
+  <div class="{{ clase_campo(errores, 'cuenta_id') }}">
+    <label for="cuenta_id">Lo pagas desde</label>
+    <select id="cuenta_id" name="cuenta_id"><option value="">Elige…</option>
+      {% for c in cuentas %}<option value="{{ c.id }}" {{ 'selected' if valores.cuenta_id == c.id|string }}>{{ c.nombre }}</option>{% endfor %}</select>
+    {{ error(errores, 'cuenta_id') }}
+  </div>
+  <div class="dos-columnas">
+    <div class="{{ clase_campo(errores, 'categoria_id') }}">
+      <label for="categoria_id">Categoría del gasto</label>
+      <select id="categoria_id" name="categoria_id"><option value="">—</option>
+        {% for c in categorias %}<option value="{{ c.id }}" {{ 'selected' if valores.categoria_id == c.id|string }}>{{ c.etiqueta }}</option>{% endfor %}</select>
+      {{ error(errores, 'categoria_id') }}
+    </div>
+    <div class="{{ clase_campo(errores, 'cuenta_destino_id') }}">
+      <label for="cuenta_destino_id">…o la deuda que pagas</label>
+      <select id="cuenta_destino_id" name="cuenta_destino_id"><option value="">—</option>
+        {% for c in pasivos %}<option value="{{ c.id }}" {{ 'selected' if valores.cuenta_destino_id == c.id|string }}>{{ c.nombre }}</option>{% endfor %}</select>
+      <span class="ayuda">Si eliges una tarjeta o un préstamo, el pago se registra como transferencia (no como gasto).</span>
+      {{ error(errores, 'cuenta_destino_id') }}
+    </div>
+  </div>
+  <div class="{{ clase_campo(errores, 'nota') }}">
+    <label for="nota">Nota</label>
+    <input id="nota" name="nota" type="text" maxlength="500" value="{{ valores.nota or '' }}" placeholder="Opcional">
+  </div>
+  <label class="casilla"><input type="checkbox" name="activa" value="1" {{ 'checked' if valores.activa }}><span>Activo</span></label>
+  <div class="acciones"><button class="boton" type="submit">Guardar</button></div>
+</form>
+{% if recurrente %}
+<form method="post" action="/recurrentes/{{ recurrente.id }}/eliminar" data-confirmar="¿Eliminar «{{ recurrente.nombre }}»?">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}">
+  <button class="boton boton-peligro boton-chico" type="submit">Eliminar</button>
+</form>
+{% endif %}
+{% endblock %}

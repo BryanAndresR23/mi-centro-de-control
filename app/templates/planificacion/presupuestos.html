@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icono, barra_presupuesto %}
+{% block titulo %}Presupuestos · Mi Centro de Control{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <div class="navegador-mes">
+    <a href="/presupuestos?mes={{ mes_anterior }}" aria-label="Mes anterior">{{ icono("izq") }}</a>
+    <h1>{{ titulo_mes }}</h1>
+    <a href="/presupuestos?mes={{ mes_siguiente }}" aria-label="Mes siguiente">{{ icono("der") }}</a>
+  </div>
+  <a class="boton boton-chico" href="/presupuestos/nuevo">+ Presupuesto</a>
+</div>
+
+<section class="tarjeta">
+  <div class="tarjeta-cabecera">
+    <h2>Presupuestos del mes</h2>
+    <span class="sutil num">{{ total_gastado|usd }} de {{ total_presupuesto|usd }}</span>
+  </div>
+  {% if estados %}
+    <div class="lista-presupuestos">
+      {% for e, cat in estados %}{{ barra_presupuesto(e, cat, es_mes_actual, enlace="/presupuestos/" ~ e.presupuesto_id ~ "/editar") }}{% endfor %}
+    </div>
+  {% else %}
+    <div class="vacio">
+      <p>Aún no tienes presupuestos. Pon un tope mensual a las categorías donde más gastas y la app te avisará al llegar al 80 % y al 100 %.</p>
+      <a class="boton" href="/presupuestos/nuevo">Crear mi primer presupuesto</a>
+    </div>
+  {% endif %}
+</section>
+
+{% if sin_presupuesto %}
+<section class="tarjeta">
+  <div class="tarjeta-cabecera"><h2>Gastos sin presupuesto</h2></div>
+  <div class="lista">
+    {% for cat, total in sin_presupuesto %}
+    <a class="fila" href="/presupuestos/nuevo?categoria={{ cat.id }}">
+      <span class="mov-icono" aria-hidden="true">{{ cat.icono or '•' }}</span>
+      <span class="mov-texto"><span class="mov-titulo">{{ cat.nombre }}</span><span class="mov-detalle">Crear presupuesto</span></span>
+      <span class="monto">{{ total|usd }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}

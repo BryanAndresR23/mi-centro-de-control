@@ -1,0 +1,19 @@
+<form method="post" action="/pendientes/becas{{ '/' ~ b.id if b else '' }}" class="formulario" style="margin-top:10px">
+  <input type="hidden" name="csrf_token" value="{{ token }}">
+  <div class="dos-columnas">
+    <div class="campo"><label>Programa</label><input name="programa" type="text" maxlength="160" value="{{ b.programa if b else '' }}" placeholder="MSc Data Science" required></div>
+    <div class="campo"><label>Universidad</label><input name="universidad" type="text" maxlength="160" value="{{ b.universidad or '' if b else '' }}"></div>
+  </div>
+  <div class="dos-columnas">
+    <div class="campo"><label>País</label><input name="pais" type="text" maxlength="60" value="{{ b.pais or '' if b else '' }}"></div>
+    <div class="campo"><label>Beca / financiamiento</label><input name="beca" type="text" maxlength="160" value="{{ b.beca or '' if b else '' }}" placeholder="Chevening, Fulbright, SENESCYT…"></div>
+  </div>
+  <div class="dos-columnas">
+    <div class="campo"><label>Fecha límite</label><input name="fecha_limite" type="date" value="{{ b.fecha_limite.isoformat() if b and b.fecha_limite else '' }}"></div>
+    <div class="campo"><label>Estado</label><select name="estado">{% for k, v in estados.items() %}<option value="{{ k }}" {{ 'selected' if b and b.estado == k }}>{{ v }}</option>{% endfor %}</select></div>
+  </div>
+  <div class="campo"><label>Enlace</label><input name="enlace" type="url" maxlength="500" value="{{ b.enlace or '' if b else '' }}" placeholder="https://"></div>
+  <div class="campo"><label>{{ 'Agregar requisito' if b else 'Requisito adicional (se agregan IELTS/TOEFL, cartas, ensayo, CV, títulos y pasaporte)' }}</label><input name="nuevo_requisito" type="text" maxlength="200"></div>
+  <div class="campo"><label>Notas</label><textarea name="notas" maxlength="3000">{{ b.notas or '' if b else '' }}</textarea></div>
+  <div class="acciones"><button class="boton boton-chico" type="submit">Guardar</button></div>
+</form>

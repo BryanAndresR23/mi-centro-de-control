@@ -91,6 +91,67 @@
     actualizar();
   }
 
+  // --- Subida de recibos: se reducen en el celular y se suben de a dos ----
+  const formRecibos = document.getElementById("form-recibos");
+  if (formRecibos) {
+    const entrada = formRecibos.querySelector('input[type="file"]');
+    const lista = document.getElementById("progreso-subida");
+    const LADO_MAX = 1600;
+
+    const reducir = (archivo) => new Promise((resolver) => {
+      if (!archivo.type.startsWith("image/") || archivo.type === "image/gif") return resolver(archivo);
+      const url = URL.createObjectURL(archivo);
+      const img = new Image();
+      img.onload = () => {
+        const escala = Math.min(1, LADO_MAX / Math.max(img.width, img.height));
+        const lienzo = document.createElement("canvas");
+        lienzo.width = Math.round(img.width * escala);
+        lienzo.height = Math.round(img.height * escala);
+        lienzo.getContext("2d").drawImage(img, 0, 0, lienzo.width, lienzo.height);
+        URL.revokeObjectURL(url);
+        lienzo.toBlob((blob) => resolver(blob ? new File([blob], archivo.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" }) : archivo),
+          "image/jpeg", 0.85);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); resolver(archivo); };
+      img.src = url;
+    });
+
+    entrada.addEventListener("change", async () => {
+      const archivos = [...entrada.files];
+      if (!archivos.length) return;
+      entrada.disabled = true;
+      const lote = Math.random().toString(36).slice(2, 12);
+      const filas = archivos.map((a) => {
+        const li = document.createElement("li");
+        li.textContent = `⏳ ${a.name}`;
+        lista.appendChild(li);
+        return li;
+      });
+      let siguiente = 0;
+      const trabajador = async () => {
+        while (siguiente < archivos.length) {
+          const i = siguiente++;
+          filas[i].textContent = `📖 Leyendo ${archivos[i].name}…`;
+          try {
+            const datos = new FormData();
+            datos.append("archivos", await reducir(archivos[i]));
+            datos.append("lote", lote);
+            const r = await fetch("/recibos/subir", {
+              method: "POST", body: datos, headers: { "X-CSRF-Token": csrf, Accept: "application/json" },
+            });
+            const j = await r.json();
+            const res = j.resultados[0] || {};
+            filas[i].textContent = res.ok ? `✓ ${archivos[i].name}` : `⚠ ${archivos[i].name}: ${res.error || "revisar a mano"}`;
+          } catch (e) {
+            filas[i].textContent = `⛔ ${archivos[i].name}: no se pudo subir`;
+          }
+        }
+      };
+      await Promise.all([trabajador(), trabajador()]);
+      window.location.reload();
+    });
+  }
+
   // --- Gráficos del dashboard --------------------------------------------
   const nodoDatos = document.getElementById("datos-graficos");
   if (!nodoDatos || !window.Chart) return;

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% from "_macros.html" import error, clase_campo %}
+{% block titulo %}Presupuesto · Mi Centro de Control{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <h1>{{ 'Editar presupuesto' if presupuesto else 'Nuevo presupuesto' }}</h1>
+  <a class="boton boton-sec boton-chico" href="/presupuestos">Cancelar</a>
+</div>
+<form method="post" class="tarjeta formulario" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}">
+  <div class="{{ clase_campo(errores, 'categoria_id') }}">
+    <label for="categoria_id">Categoría</label>
+    <select id="categoria_id" name="categoria_id" {{ 'disabled' if presupuesto }}>
+      <option value="">Elige…</option>
+      {% for c in categorias %}
+        <option value="{{ c.id }}" {{ 'selected' if valores.categoria_id == c.id|string }}>
+          {{ c.etiqueta }}{% if sugerencias[c.id] %} — promedio {{ sugerencias[c.id]|usd }}/mes{% endif %}</option>
+      {% endfor %}
+    </select>
+    {% if presupuesto %}<input type="hidden" name="categoria_id" value="{{ valores.categoria_id }}">{% endif %}
+    <span class="ayuda">Al lado de cada categoría ves tu gasto promedio de los últimos 3 meses.</span>
+    {{ error(errores, 'categoria_id') }}
+  </div>
+  <div class="dos-columnas">
+    <div class="{{ clase_campo(errores, 'monto') }}">
+      <label for="monto">Tope mensual (USD)</label>
+      <input id="monto" name="monto" type="text" inputmode="decimal" value="{{ valores.monto or '' }}" placeholder="0.00">
+      {{ error(errores, 'monto') }}
+    </div>
+    <div class="{{ clase_campo(errores, 'desde_mes') }}">
+      <label for="desde_mes">Desde</label>
+      <input id="desde_mes" name="desde_mes" type="month" value="{{ valores.desde_mes or '' }}">
+      {{ error(errores, 'desde_mes') }}
+    </div>
+  </div>
+  {% if presupuesto %}<p class="sutil">Si cambias el monto de un presupuesto que viene de meses anteriores, el nuevo monto rige desde este mes y los meses pasados conservan el anterior.</p>{% endif %}
+  <div class="acciones"><button class="boton" type="submit">Guardar</button></div>
+</form>
+{% if presupuesto %}
+<form method="post" action="/presupuestos/{{ presupuesto.id }}/eliminar" data-confirmar="¿Quitar este presupuesto desde este mes?">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}">
+  <button class="boton boton-peligro boton-chico" type="submit">Quitar presupuesto</button>
+</form>
+{% endif %}
+{% endblock %}

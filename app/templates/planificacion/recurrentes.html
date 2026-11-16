@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% from "_macros.html" import fila_pago %}
+{% block titulo %}Deudas y suscripciones · Mi Centro de Control{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <h1>Deudas y suscripciones</h1>
+  <a class="boton boton-chico" href="/recurrentes/nuevo">+ Pago fijo</a>
+</div>
+
+<section class="kpis" aria-label="Costos">
+  <div class="tarjeta kpi"><span class="etiqueta-kpi">Pagos fijos al mes</span><span class="valor">{{ total_mensual|usd }}</span></div>
+  <div class="tarjeta kpi"><span class="etiqueta-kpi">Suscripciones al mes</span><span class="valor">{{ total_suscripciones|usd }}</span>
+    <span class="delta">{{ (total_suscripciones * 12)|usd }} al año</span></div>
+</section>
+
+<section class="tarjeta">
+  <div class="tarjeta-cabecera"><h2>Próximos 30 días</h2></div>
+  {% if proximos %}
+    <div class="lista">{% for p, r in proximos %}{{ fila_pago(p, r, csrf_token(request)) }}{% endfor %}</div>
+  {% else %}
+    <p class="vacio">No hay vencimientos en los próximos 30 días.</p>
+  {% endif %}
+</section>
+
+{% if revisar_uso %}
+<section class="tarjeta">
+  <div class="tarjeta-cabecera"><h2>¿Usaste estas suscripciones este mes?</h2></div>
+  <div class="lista">
+  {% for r in revisar_uso %}
+    <div class="fila">
+      <span class="mov-icono" aria-hidden="true">📺</span>
+      <span class="mov-texto"><span class="mov-titulo">{{ r.nombre }}</span>
+        <span class="mov-detalle">{{ costo[r.id]|usd }}/mes{% if r.meses_sin_uso %} · {{ r.meses_sin_uso }} mes(es) sin usar{% endif %}</span></span>
+      <span class="acciones">
+        <form method="post" action="/recurrentes/{{ r.id }}/uso"><input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}"><input type="hidden" name="usada" value="1"><button class="chip" type="submit">Sí</button></form>
+        <form method="post" action="/recurrentes/{{ r.id }}/uso"><input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}"><input type="hidden" name="usada" value="0"><button class="chip" type="submit">No</button></form>
+      </span>
+    </div>
+  {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<section class="tarjeta">
+  <div class="tarjeta-cabecera"><h2>Todos</h2></div>
+  {% if activos %}
+  <div class="lista">
+    {% for r in activos %}
+    <a class="fila" href="/recurrentes/{{ r.id }}/editar">
+      <span class="mov-icono" aria-hidden="true">{% if r.tipo == 'deuda' %}💳{% elif r.tipo == 'suscripcion' %}📺{% elif r.tipo == 'servicio' %}💡{% else %}📌{% endif %}</span>
+      <span class="mov-texto"><span class="mov-titulo">{{ r.nombre }}</span>
+        <span class="mov-detalle">{{ tipos[r.tipo] }} · {{ frecuencias[r.frecuencia]|lower }} · próximo {{ r.proxima_fecha|fecha_corta }}</span></span>
+      <span class="monto">{{ r.monto|usd }}<small>{{ costo[r.id]|usd }}/mes</small></span>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="vacio">
+    <p>Agrega tus suscripciones (Netflix, Spotify…), servicios (luz, internet) y cuotas de deudas: verás cuánto suman y te recordaré antes de cada vencimiento.</p>
+    <a class="boton" href="/recurrentes/nuevo">Agregar el primero</a>
+  </div>
+  {% endif %}
+</section>
+
+{% if inactivos %}
+<details class="tarjeta"><summary class="seccion-titulo" style="cursor:pointer">Inactivos ({{ inactivos|length }})</summary>
+  <div class="lista">{% for r in inactivos %}<a class="fila" href="/recurrentes/{{ r.id }}/editar"><span class="mov-icono">⏸️</span><span class="mov-texto"><span class="mov-titulo">{{ r.nombre }}</span></span><span class="monto">{{ r.monto|usd }}</span></a>{% endfor %}</div>
+</details>
+{% endif %}
+{% endblock %}

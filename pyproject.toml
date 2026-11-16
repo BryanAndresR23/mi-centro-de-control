@@ -17,6 +17,9 @@ dependencies = [
     "psycopg[binary]==3.3.9",
     "python-dotenv==1.2.4",
     "tzdata==2026.6",
+    "anthropic==2.9.0",
+    "openpyxl==3.1.5",
+    "defusedxml==0.7.1",
 ]
 
 # Vercel: la app FastAPI está en app/main.py; en cada despliegue se aplican las migraciones

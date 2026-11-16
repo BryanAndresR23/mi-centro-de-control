@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "_macros.html" import error, clase_campo %}
+{% block titulo %}Área · Mi Centro de Control{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <h1>{{ 'Editar área' if area else 'Nueva área' }}</h1>
+  <a class="boton boton-sec boton-chico" href="{{ '/pendientes/area/' ~ area.id if area else '/pendientes' }}">Cancelar</a>
+</div>
+<form method="post" class="tarjeta formulario" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}">
+  <div class="dos-columnas">
+    <div class="{{ clase_campo(errores, 'nombre') }}"><label for="nombre">Nombre</label>
+      <input id="nombre" name="nombre" type="text" maxlength="60" value="{{ valores.nombre or '' }}" placeholder="Portugués, Lectura, Finanzas del hogar…">
+      {{ error(errores, 'nombre') }}</div>
+    <div class="campo"><label for="icono">Ícono (emoji)</label><input id="icono" name="icono" type="text" maxlength="16" value="{{ valores.icono or '' }}"></div>
+  </div>
+  <div class="{{ clase_campo(errores, 'plantilla') }}"><label for="plantilla">Tipo de área</label>
+    <select id="plantilla" name="plantilla">{% for k, v in plantillas.items() %}<option value="{{ k }}" {{ 'selected' if valores.plantilla == k }}>{{ v }}</option>{% endfor %}</select>
+    <span class="ayuda">Cada tipo agrega su propia sección: rutina y series (fitness), horas y racha (idioma o habilidad), embudo (postulaciones), checklist (becas) o hitos (metas).</span></div>
+  <div class="dos-columnas">
+    <div class="{{ clase_campo(errores, 'horas_semana') }}"><label for="horas_semana">Horas por semana (objetivo)</label>
+      <input id="horas_semana" name="horas_semana" type="number" min="0" max="80" value="{{ valores.horas_semana or '' }}">{{ error(errores, 'horas_semana') }}</div>
+    <div class="campo"><label for="nivel_actual">Nivel actual → objetivo</label>
+      <div class="dos-columnas"><input id="nivel_actual" name="nivel_actual" type="text" maxlength="40" value="{{ valores.nivel_actual or '' }}" placeholder="B2">
+      <input name="nivel_objetivo" type="text" maxlength="40" value="{{ valores.nivel_objetivo or '' }}" placeholder="C1" aria-label="Nivel objetivo"></div></div>
+  </div>
+  {% if area %}<label class="casilla"><input type="checkbox" name="archivar" value="1"><span>Archivar esta área</span></label>{% endif %}
+  <div class="acciones"><button class="boton" type="submit">Guardar</button></div>
+</form>
+{% endblock %}

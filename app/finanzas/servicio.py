@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
+from decimal import Decimal
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -135,6 +136,47 @@ def cuenta_por_defecto(bd: Session, tipo: str) -> int | None:
         if not cuenta.es_pasivo:
             return cuenta.id
     return None
+
+
+def padre_de(bd: Session) -> dict[int, int | None]:
+    return {cid: pid for cid, pid in bd.execute(select(Categoria.id, Categoria.padre_id)).all()}
+
+
+def presupuestos_datos(bd: Session) -> list:
+    from ..models import Presupuesto
+    from .planificacion import PresupuestoDato
+
+    return [
+        PresupuestoDato(p.id, p.categoria_id, p.monto, p.desde_mes, p.hasta_mes)
+        for p in bd.scalars(select(Presupuesto))
+    ]
+
+
+def aportes_por_meta(bd: Session) -> dict[int, list[tuple[date, Decimal]]]:
+    from .planificacion import aporte_a_meta
+
+    aportes: dict[int, list[tuple[date, Decimal]]] = {}
+    filas = bd.execute(
+        select(Movimiento.meta_id, Movimiento.fecha, Movimiento.tipo, Movimiento.monto).where(Movimiento.meta_id.is_not(None))
+    ).all()
+    for meta_id, fecha, tipo, monto in filas:
+        aportes.setdefault(meta_id, []).append((fecha, aporte_a_meta(tipo, monto)))
+    return aportes
+
+
+def progreso_metas(bd: Session, hoy: date, solo_activas: bool = True) -> list[tuple]:
+    """[(meta, progreso)] en el orden de la lista."""
+    from ..models import MetaAhorro
+    from .planificacion import progreso_meta
+
+    consulta = select(MetaAhorro).order_by(MetaAhorro.estado, MetaAhorro.orden, MetaAhorro.id)
+    if solo_activas:
+        consulta = consulta.where(MetaAhorro.estado == "activa")
+    aportes = aportes_por_meta(bd)
+    return [
+        (m, progreso_meta(m.monto_objetivo, m.saldo_inicial, aportes.get(m.id, []), hoy, m.fecha_objetivo))
+        for m in bd.scalars(consulta)
+    ]
 
 
 def destino_ahorro_por_defecto(bd: Session) -> int | None:

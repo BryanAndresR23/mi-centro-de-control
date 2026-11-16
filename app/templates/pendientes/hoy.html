@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% from "_macros.html" import fila_tarea, form_tarea_rapida, fila_pago, nivel_etiqueta %}
+{% block titulo %}Hoy · Mi Centro de Control{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <div><h1 class="capital">{{ hoy|fecha_larga }}</h1>
+    <p class="sutil">{{ para_hoy|length }} pendiente{{ 's' if para_hoy|length != 1 }} para hoy · {{ semana|length }} esta semana · {{ pagos|length }} pago{{ 's' if pagos|length != 1 }} próximo{{ 's' if pagos|length != 1 }}</p></div>
+</div>
+
+<section class="tarjeta">{{ form_tarea_rapida(csrf_token(request), areas) }}</section>
+
+<div class="rejilla-2">
+  <section class="tarjeta">
+    <div class="tarjeta-cabecera"><h2>Para hoy</h2><a href="/pendientes">Tablero</a></div>
+    {% if para_hoy %}<div class="lista">{% for t in para_hoy %}{{ fila_tarea(t, csrf_token(request), hoy, urgencia) }}{% endfor %}</div>
+    {% else %}<p class="vacio">Nada vencido ni para hoy. 🎉</p>{% endif %}
+    {% if semana %}
+      <div class="seccion-titulo" style="margin-top:10px"><span>Esta semana</span></div>
+      <div class="lista">{% for t in semana %}{{ fila_tarea(t, csrf_token(request), hoy, urgencia) }}{% endfor %}</div>
+    {% endif %}
+  </section>
+
+  <section class="tarjeta">
+    <div class="tarjeta-cabecera"><h2>Pagos de los próximos 7 días</h2><a href="/recurrentes">Ver todos</a></div>
+    {% if pagos %}<div class="lista">{% for p, r in pagos %}{{ fila_pago(p, r, csrf_token(request)) }}{% endfor %}</div>
+    {% else %}<p class="vacio">Sin vencimientos esta semana.</p>{% endif %}
+    {% if alertas %}
+      <div class="seccion-titulo" style="margin-top:10px"><span>Presupuestos en alerta</span></div>
+      <div class="lista">{% for e, c in alertas %}
+        <a class="fila" href="/presupuestos"><span class="mov-icono">{{ c.icono if c and c.icono else '•' }}</span>
+          <span class="mov-texto"><span class="mov-titulo">{{ c.nombre if c else '' }}</span><span class="mov-detalle">{{ e.gastado|usd }} de {{ e.monto|usd }}</span></span>
+          <span class="monto">{{ nivel_etiqueta(e.nivel, e.pct) }}</span></a>{% endfor %}</div>
+    {% endif %}
+  </section>
+</div>
+
+<div class="rejilla-2">
+  {% if estudio or rutina is not none %}
+  <section class="tarjeta">
+    <div class="tarjeta-cabecera"><h2>Hábitos</h2></div>
+    <div class="lista">
+      {% if rutina %}
+      <a class="fila" href="/pendientes/area/{{ (areas|selectattr('plantilla', 'equalto', 'fitness')|first).id if areas|selectattr('plantilla', 'equalto', 'fitness')|list else '' }}">
+        <span class="mov-icono">🏋️</span>
+        <span class="mov-texto"><span class="mov-titulo">Hoy toca: {{ rutina.nombre }}</span>
+          <span class="mov-detalle">{{ (rutina.ejercicios or '')|replace('\n', ' · ')|truncate(80) }}</span></span>
+        <span class="monto">{% if entreno_hoy %}<span class="estado estado-bueno">✓ hecho</span>{% else %}<span class="estado">pendiente</span>{% endif %}</span>
+      </a>
+      {% endif %}
+      {% for a, e in estudio %}
+      <a class="fila" href="/pendientes/area/{{ a.id }}">
+        <span class="mov-icono">{{ a.icono or '📚' }}</span>
+        <span class="mov-texto"><span class="mov-titulo">{{ a.nombre }}: {{ (e.minutos_semana / 60)|round(1) }} h de {{ (e.objetivo_minutos / 60)|round(1) }} h esta semana</span>
+          <span class="mov-detalle">🔥 racha de {{ e.racha }} día{{ 's' if e.racha != 1 }}{% if not e.hoy_estudiado %} · aún no estudias hoy{% endif %}</span></span>
+        <span class="monto">{% if e.hoy_estudiado %}<span class="estado estado-bueno">✓ hoy</span>{% else %}<span class="estado estado-aviso">⚠ hoy</span>{% endif %}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if proximos_pasos or becas %}
+  <section class="tarjeta">
+    <div class="tarjeta-cabecera"><h2>Postulaciones y becas</h2></div>
+    <div class="lista">
+      {% for p in proximos_pasos %}
+      <div class="fila"><span class="mov-icono">📨</span>
+        <span class="mov-texto"><span class="mov-titulo">{{ p.empresa }} — {{ p.proximo_paso or estados_postulacion[p.estado] }}</span>
+          <span class="mov-detalle">{{ p.cargo }} · {{ p.fecha_proximo_paso|fecha_corta }}</span></span></div>
+      {% endfor %}
+      {% for b in becas %}{% set hechos = b.requisitos|selectattr('hecho')|list|length %}
+      <div class="fila"><span class="mov-icono">🎓</span>
+        <span class="mov-texto"><span class="mov-titulo">{{ b.programa }}</span>
+          <span class="mov-detalle">cierra {{ b.fecha_limite|fecha_corta }} · requisitos {{ hechos }}/{{ b.requisitos|length }}</span></span>
+        <span class="monto">{% if (b.fecha_limite - hoy).days <= 14 %}<span class="estado estado-aviso">⚠ {{ (b.fecha_limite - hoy).days }} días</span>{% endif %}</span></div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</div>
+
+{% if suscripciones_por_revisar %}
+<a class="aviso aviso-alerta enlace-bloque" href="/recurrentes">⚠ Tienes {{ suscripciones_por_revisar }} suscripción(es) por revisar este mes: ¿las usaste? Así detecto las que podrías cancelar.</a>
+{% endif %}
+
+{% if consejo %}
+<section class="tarjeta">
+  <div class="tarjeta-cabecera"><h2>💡 Del asesor</h2><a href="/asesor">Ver informe</a></div>
+  <p>{{ consejo.texto }}</p>
+</section>
+{% endif %}
+{% endblock %}

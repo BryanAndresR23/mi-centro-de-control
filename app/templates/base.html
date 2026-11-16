@@ -20,9 +20,10 @@
   <header class="barra-superior">
     <a class="marca" href="/"><img src="/static/iconos/icono.svg" alt=""> Mi Centro de Control</a>
     <nav class="nav-escritorio" aria-label="Principal">
-      <a href="/" class="{{ 'activo' if seccion == 'inicio' }}">Inicio</a>
+      <a href="/" class="{{ 'activo' if seccion == 'hoy' }}">Hoy</a>
+      <a href="/finanzas" class="{{ 'activo' if seccion in ('finanzas', 'cuentas') }}">Finanzas</a>
       <a href="/movimientos" class="{{ 'activo' if seccion == 'movimientos' }}">Movimientos</a>
-      <a href="/cuentas" class="{{ 'activo' if seccion == 'cuentas' }}">Cuentas</a>
+      <a href="/pendientes" class="{{ 'activo' if seccion == 'pendientes' }}">Pendientes</a>
       <a href="/mas" class="{{ 'activo' if seccion == 'mas' }}">Más</a>
       <a href="/movimientos/nuevo" class="boton">+ Agregar</a>
     </nav>
@@ -36,10 +37,10 @@
   </main>
 
   <nav class="nav-movil" aria-label="Principal">
-    <a href="/" class="{{ 'activo' if seccion == 'inicio' }}">{{ icono("inicio") }}Inicio</a>
-    <a href="/movimientos" class="{{ 'activo' if seccion == 'movimientos' }}">{{ icono("lista") }}Movimientos</a>
+    <a href="/" class="{{ 'activo' if seccion == 'hoy' }}">{{ icono("inicio") }}Hoy</a>
+    <a href="/finanzas" class="{{ 'activo' if seccion in ('finanzas', 'movimientos', 'cuentas') }}">{{ icono("cuenta") }}Finanzas</a>
     <a href="/movimientos/nuevo" class="agregar" aria-label="Agregar movimiento">{{ icono("agregar") }}</a>
-    <a href="/cuentas" class="{{ 'activo' if seccion == 'cuentas' }}">{{ icono("cuenta") }}Cuentas</a>
+    <a href="/pendientes" class="{{ 'activo' if seccion == 'pendientes' }}">{{ icono("lista") }}Pendientes</a>
     <a href="/mas" class="{{ 'activo' if seccion == 'mas' }}">{{ icono("mas") }}Más</a>
   </nav>
 </body>

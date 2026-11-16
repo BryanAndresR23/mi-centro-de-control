@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block titulo %}Pendientes · Mi Centro de Control{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <h1>Pendientes y metas</h1>
+  <a class="boton boton-chico" href="/pendientes/areas/nueva">+ Área</a>
+</div>
+<div class="rejilla-areas">
+  {% for a in areas %}{% set r = resumen[a.id] %}
+  <a class="tarjeta area" href="/pendientes/area/{{ a.id }}">
+    <span class="area-icono" aria-hidden="true">{{ a.icono or '📁' }}</span>
+    <span class="area-nombre">{{ a.nombre }}</span>
+    <span class="sutil">{{ plantillas[a.plantilla] }}</span>
+    <span class="area-cifras">
+      <b>{{ r.abiertas }}</b> pendiente{{ 's' if r.abiertas != 1 }}
+      {% if r.vencidas %} · <span class="estado estado-critico">⛔ {{ r.vencidas }} vencida{{ 's' if r.vencidas != 1 }}</span>{% endif %}
+    </span>
+    {% if r.proxima %}<span class="sutil area-proxima">Siguiente: {{ r.proxima.titulo|truncate(48) }}</span>{% endif %}
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

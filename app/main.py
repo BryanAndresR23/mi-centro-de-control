@@ -10,7 +10,18 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.sessions import SessionMiddleware
 
 from .config import RAIZ, ajustes
-from .rutas import auth, categorias, cuentas, inicio, movimientos, respaldo
+from .rutas import (
+    asesor,
+    auth,
+    categorias,
+    cuentas,
+    inicio,
+    movimientos,
+    pendientes,
+    planificacion,
+    recibos,
+    respaldo,
+)
 from .seguridad import DURACION_SESION_SEG, NoAutenticado
 from .web import es_htmx, plantillas, render
 
@@ -87,6 +98,10 @@ def crear_app() -> FastAPI:
     app.mount("/static", StaticFiles(directory=str(RAIZ / "app" / "static")), name="static")
     for modulo in (auth, inicio, movimientos, cuentas, categorias, respaldo):
         app.include_router(modulo.router)
+    for router in (planificacion.presupuestos, planificacion.metas, planificacion.recurrentes,
+                   recibos.recibos, recibos.importar, pendientes.hoy_router, pendientes.router,
+                   asesor.router, asesor.cron):
+        app.include_router(router)
     return app
 
 

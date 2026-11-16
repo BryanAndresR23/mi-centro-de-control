@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from "_macros.html" import error, clase_campo %}
+{% block titulo %}Meta de ahorro · Mi Centro de Control{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <h1>{{ 'Editar meta' if meta else 'Nueva meta' }}</h1>
+  <a class="boton boton-sec boton-chico" href="/metas">Cancelar</a>
+</div>
+<form method="post" class="tarjeta formulario" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}">
+  <div class="dos-columnas">
+    <div class="{{ clase_campo(errores, 'nombre') }}">
+      <label for="nombre">Nombre</label>
+      <input id="nombre" name="nombre" type="text" maxlength="80" value="{{ valores.nombre or '' }}" placeholder="Fondo de emergencia">
+      {{ error(errores, 'nombre') }}
+    </div>
+    <div class="{{ clase_campo(errores, 'icono') }}">
+      <label for="icono">Ícono (emoji)</label>
+      <input id="icono" name="icono" type="text" maxlength="16" value="{{ valores.icono or '' }}" placeholder="🛟">
+    </div>
+  </div>
+  <div class="dos-columnas">
+    <div class="{{ clase_campo(errores, 'monto_objetivo') }}">
+      <label for="monto_objetivo">Monto objetivo (USD)</label>
+      <input id="monto_objetivo" name="monto_objetivo" type="text" inputmode="decimal" value="{{ valores.monto_objetivo or '' }}">
+      {{ error(errores, 'monto_objetivo') }}
+    </div>
+    <div class="{{ clase_campo(errores, 'fecha_objetivo') }}">
+      <label for="fecha_objetivo">Fecha objetivo (opcional)</label>
+      <input id="fecha_objetivo" name="fecha_objetivo" type="date" value="{{ valores.fecha_objetivo or '' }}">
+      {{ error(errores, 'fecha_objetivo') }}
+    </div>
+  </div>
+  <div class="{{ clase_campo(errores, 'saldo_inicial') }}">
+    <label for="saldo_inicial">Lo que ya tienes ahorrado para esta meta</label>
+    <input id="saldo_inicial" name="saldo_inicial" type="text" inputmode="decimal" value="{{ valores.saldo_inicial or '' }}" placeholder="0.00">
+    {{ error(errores, 'saldo_inicial') }}
+  </div>
+  <div class="acciones"><button class="boton" type="submit">Guardar</button></div>
+</form>
+{% endblock %}

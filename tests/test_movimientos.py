@@ -155,7 +155,7 @@ def test_dashboard_con_datos(cliente_auth, bd):
     from app.demo import cargar_demo
 
     cargar_demo(bd, hoy())
-    r = cliente_auth.get("/")
+    r = cliente_auth.get("/finanzas")
     assert r.status_code == 200
     assert "Gasto por categoría" in r.text
     assert 'id="datos-graficos"' in r.text

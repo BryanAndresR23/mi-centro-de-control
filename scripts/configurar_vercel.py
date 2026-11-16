@@ -101,7 +101,7 @@ class Ventana:
         self.raiz = tk.Tk()
         self.raiz.title("Publicar Mi Centro de Control")
         self.raiz.attributes("-topmost", True)
-        self.raiz.geometry("640x860")
+        self.raiz.geometry("660x1000")
         self.secreto_totp = ""
         fuente = ("Segoe UI", 10)
         negrita = ("Segoe UI", 10, "bold")
@@ -134,10 +134,14 @@ class Ventana:
         )).pack(fill="x", padx=16)
         boton_enlace("Abrir Neon", URL_NEON)
         self.neon = campo("Cadena de conexión")
+        tk.Label(self.raiz, font=("Segoe UI", 9), fg="#52514e", anchor="w",
+                 text="Si la app ya está publicada, déjalo vacío para conservar la base actual.").pack(fill="x", padx=16)
 
         seccion("3. Tu acceso a la app")
         self.contrasena = campo(f"Contraseña (mín. {LARGO_MINIMO})")
         self.contrasena2 = campo("Repite la contraseña")
+        tk.Label(self.raiz, font=("Segoe UI", 9), fg="#52514e", anchor="w",
+                 text="Déjalas vacías para conservar tu contraseña actual (solo se cambia el 2FA).").pack(fill="x", padx=16)
         tk.Button(self.raiz, text="Generar código QR para Google Authenticator", command=self.generar_qr).pack(
             anchor="w", padx=16, pady=6
         )
@@ -147,6 +151,18 @@ class Ventana:
         self.texto_secreto.pack()
         self.codigo = campo("Código de 6 dígitos", oculto=False)
 
+        seccion("4. Opcional: lectura de recibos con IA y recordatorios por Telegram")
+        tk.Label(self.raiz, font=("Segoe UI", 9), fg="#52514e", anchor="w", justify="left", text=(
+            "Clave de Anthropic: console.anthropic.com → API Keys. Bot de Telegram: escríbele a @BotFather → /newbot.\n"
+            "Déjalos vacíos para no cambiarlos. El código QR del paso 3 también es opcional si ya tienes 2FA."
+        )).pack(fill="x", padx=16)
+        self.anthropic = campo("ANTHROPIC_API_KEY")
+        self.telegram_token = campo("Token del bot (Telegram)")
+        self.telegram_chat = campo("Tu chat ID (Telegram)", oculto=False)
+
+        self.borrar_token = tk.BooleanVar(value=True)
+        tk.Checkbutton(self.raiz, text="Borrar el token de Vercel al terminar (recomendado)",
+                       variable=self.borrar_token, font=fuente).pack(pady=(10, 0))
         self.boton = tk.Button(self.raiz, text="Configurar y publicar", font=negrita, command=self.empezar)
         self.boton.pack(pady=12)
         self.estado = tk.Label(self.raiz, text="", wraplength=600, justify="left", font=("Segoe UI", 9))
@@ -193,17 +209,17 @@ class Ventana:
         contrasena = self.contrasena.get()
         if not token or " " in token:
             return self.decir("Pega el token de Vercel (paso 1).", True)
-        try:
-            urls_neon(neon)
-        except ValueError as exc:
-            return self.decir(str(exc) + " (paso 2).", True)
-        if len(contrasena) < LARGO_MINIMO:
-            return self.decir(f"La contraseña debe tener al menos {LARGO_MINIMO} caracteres.", True)
-        if contrasena != self.contrasena2.get():
-            return self.decir("Las contraseñas no coinciden.", True)
-        if not self.secreto_totp:
-            return self.decir("Genera el código QR y escanéalo (paso 3).", True)
-        if not pyotp.TOTP(self.secreto_totp).verify(self.codigo.get().replace(" ", ""), valid_window=1):
+        if neon:
+            try:
+                urls_neon(neon)
+            except ValueError as exc:
+                return self.decir(str(exc) + " (paso 2).", True)
+        if contrasena or self.contrasena2.get():
+            if len(contrasena) < LARGO_MINIMO:
+                return self.decir(f"La contraseña debe tener al menos {LARGO_MINIMO} caracteres.", True)
+            if contrasena != self.contrasena2.get():
+                return self.decir("Las contraseñas no coinciden.", True)
+        if self.secreto_totp and not pyotp.TOTP(self.secreto_totp).verify(self.codigo.get().replace(" ", ""), valid_window=1):
             return self.decir("El código de Authenticator no coincide. Revisa la hora del celular.", True)
         self.boton.config(state="disabled")
         threading.Thread(target=self.trabajar, args=(token, neon, contrasena), daemon=True).start()
@@ -289,15 +305,32 @@ class Ventana:
         id_proyecto = proyecto["id"]
 
         self.decir("3/5 Guardando las variables de entorno (cifradas)…")
-        pool, directa = urls_neon(neon)
-        variables = {
-            "ENTORNO": "produccion",
-            "DATABASE_URL": pool,
-            "DATABASE_URL_MIGRACIONES": directa,
-            "SECRET_KEY": secrets.token_urlsafe(48),
-            "APP_PASSWORD_HASH": PasswordHasher().hash(contrasena),
-            "TOTP_SECRET": self.secreto_totp,
-        }
+        existentes = {e.get("key") for e in vercel("GET", f"/v9/projects/{id_proyecto}/env", token, query=q).get("envs", [])}
+        if not neon and "DATABASE_URL" not in existentes:
+            self.decir("Este proyecto aún no tiene base de datos: pega la cadena de Neon (paso 2).", True)
+            return self.terminar(False)
+        if not contrasena and "APP_PASSWORD_HASH" not in existentes:
+            self.decir("Este proyecto aún no tiene contraseña: escríbela en el paso 3.", True)
+            return self.terminar(False)
+        if not self.secreto_totp and "TOTP_SECRET" not in existentes:
+            self.decir("Este proyecto aún no tiene 2FA: genera el código QR y escanéalo (paso 3).", True)
+            return self.terminar(False)
+        variables = {"ENTORNO": "produccion"}
+        if neon:  # vacío = se conserva la base actual
+            variables["DATABASE_URL"], variables["DATABASE_URL_MIGRACIONES"] = urls_neon(neon)
+        if contrasena:  # vacío = se conserva la contraseña actual
+            variables["APP_PASSWORD_HASH"] = PasswordHasher().hash(contrasena)
+        if self.secreto_totp:  # vacío = se conserva el 2FA actual
+            variables["TOTP_SECRET"] = self.secreto_totp
+        if contrasena or self.secreto_totp or "SECRET_KEY" not in existentes:
+            variables["SECRET_KEY"] = secrets.token_urlsafe(48)  # cierra las sesiones abiertas
+        if "CRON_SECRET" not in existentes:
+            variables["CRON_SECRET"] = secrets.token_urlsafe(32)
+        for clave, campo_tk in (("ANTHROPIC_API_KEY", self.anthropic), ("TELEGRAM_BOT_TOKEN", self.telegram_token),
+                                ("TELEGRAM_CHAT_ID", self.telegram_chat)):
+            valor = campo_tk.get().strip()
+            if valor:
+                variables[clave] = valor
         cuerpo_env = [{"key": k, "value": v, "type": "encrypted", "target": ["production"]} for k, v in variables.items()]
         vercel("POST", f"/v10/projects/{id_proyecto}/env", token, cuerpo_env, {**q, "upsert": "true"})
         registrar("Variables guardadas: " + ", ".join(variables))
@@ -331,8 +364,16 @@ class Ventana:
         url = f"https://{nombres[0]}" if nombres else f"https://{despliegue.get('url')}"
         ARCHIVO_URL.write_text(url + "\n", encoding="utf-8")
         registrar(f"Listo: {url}")
-        self.decir(f"LISTO: {url}\nÁbrela en tu celular, entra con tu contraseña y el código de Authenticator. "
-                   "Ya puedes borrar el token en Vercel y cerrar esta ventana.")
+        nota_token = "Ya puedes borrar el token en Vercel y cerrar esta ventana."
+        if self.borrar_token.get():
+            try:
+                vercel("DELETE", "/v3/user/tokens/current", token)
+                registrar("Token de Vercel borrado")
+                nota_token = "El token de Vercel ya fue borrado. Puedes cerrar esta ventana."
+            except ErrorVercel as exc:
+                registrar(f"No se pudo borrar el token: {exc}")
+                nota_token = "No pude borrar el token de Vercel: bórralo en Account Settings → Tokens."
+        self.decir(f"LISTO: {url}\nEntra con tu contraseña y el código NUEVO de Authenticator. {nota_token}")
         self.raiz.after(0, lambda: self.boton_abrir.config(state="normal", command=lambda: webbrowser.open(url)))
         self.terminar(True)
 

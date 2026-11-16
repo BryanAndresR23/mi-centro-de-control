@@ -35,12 +35,22 @@ ESCRITORIO = {"width": 1280, "height": 900, "deviceScaleFactor": 1, "mobile": Fa
 
 CAPTURAS = [
     # (archivo, ruta, pantalla, tema, página completa)
-    ("01-dashboard-escritorio.png", f"/?mes={MES}", ESCRITORIO, "light", True),
-    ("02-dashboard-movil.png", f"/?mes={MES}", MOVIL, "light", False),
+    ("01-dashboard-escritorio.png", f"/finanzas?mes={MES}", ESCRITORIO, "light", True),
+    ("02-dashboard-movil.png", f"/finanzas?mes={MES}", MOVIL, "light", False),
     ("03-movimientos-movil.png", f"/movimientos?mes={MES}", MOVIL, "light", False),
     ("04-nuevo-movimiento-movil.png", "/movimientos/nuevo", MOVIL, "light", False),
     ("05-cuentas-movil.png", "/cuentas", MOVIL, "light", False),
-    ("06-dashboard-oscuro-movil.png", f"/?mes={MES}", MOVIL, "dark", False),
+    ("06-dashboard-oscuro-movil.png", f"/finanzas?mes={MES}", MOVIL, "dark", False),
+    ("08-hoy-movil.png", "/", MOVIL, "light", False),
+    ("09-hoy-escritorio.png", "/", ESCRITORIO, "light", True),
+    ("10-presupuestos-movil.png", "/presupuestos", MOVIL, "light", False),
+    ("11-metas-movil.png", "/metas", MOVIL, "light", False),
+    ("12-recurrentes-movil.png", "/recurrentes", MOVIL, "light", False),
+    ("13-recibos-movil.png", "/recibos", MOVIL, "light", False),
+    ("14-pendientes-movil.png", "/pendientes", MOVIL, "light", False),
+    ("15-ingles-movil.png", "/pendientes/area/3", MOVIL, "light", False),
+    ("16-becas-movil.png", "/pendientes/area/6", MOVIL, "light", False),
+    ("17-asesor-escritorio.png", "/asesor/informe/1", ESCRITORIO, "light", True),
     ("07-login-movil.png", "/login", MOVIL, "light", False),
 ]
 

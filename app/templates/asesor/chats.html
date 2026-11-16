@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block titulo %}Telegram · Mi Centro de Control{% endblock %}
+{% block contenido %}
+<div class="encabezado"><h1>Tu chat de Telegram</h1><a class="boton boton-sec boton-chico" href="/asesor">Volver</a></div>
+<section class="tarjeta">
+  <p class="sutil">Escríbele cualquier mensaje a tu bot en Telegram y recarga esta página. Copia tu número de chat en la variable <code>TELEGRAM_CHAT_ID</code> de Vercel.</p>
+  {% if chats %}<table style="margin-top:10px"><thead><tr><th>Nombre</th><th>TELEGRAM_CHAT_ID</th></tr></thead>
+    <tbody>{% for id, nombre in chats %}<tr><td>{{ nombre }}</td><td class="num">{{ id }}</td></tr>{% endfor %}</tbody></table>
+  {% else %}<p class="vacio">Todavía no hay mensajes para el bot.</p>{% endif %}
+</section>
+{% endblock %}

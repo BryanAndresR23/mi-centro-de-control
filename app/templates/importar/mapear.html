@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block titulo %}Columnas · Mi Centro de Control{% endblock %}
+{% block contenido %}
+<div class="encabezado"><h1>¿Qué es cada columna?</h1><a class="boton boton-sec boton-chico" href="/importar">Cancelar</a></div>
+<section class="tarjeta">
+  <form method="post" action="/importar/preparar" class="formulario">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}">
+    <input type="hidden" name="adjunto_id" value="{{ adjunto.id }}">
+    <input type="hidden" name="cuenta_id" value="{{ cuenta.id }}">
+    <input type="hidden" name="encabezado" value="{{ encabezado }}">
+    <p class="sutil">Cuenta: <b>{{ cuenta.nombre }}</b>. Detecté los encabezados en la fila {{ encabezado + 1 }}. Usa «Monto» si hay una sola columna con signo, o «Débito» y «Crédito» si vienen separados.</p>
+    <div class="dos-columnas">
+      {% for campo, rotulo in [('fecha','Fecha'),('descripcion','Descripción'),('monto','Monto (con signo)'),('debito','Débito / cargo'),('credito','Crédito / abono')] %}
+      <div class="campo"><label for="c-{{ campo }}">{{ rotulo }}</label>
+        <select id="c-{{ campo }}" name="{{ campo }}"><option value="">— No hay —</option>
+          {% for t in titulos %}<option value="{{ loop.index0 }}" {{ 'selected' if columnas[campo] == loop.index0 }}>{{ t }}</option>{% endfor %}</select></div>
+      {% endfor %}
+    </div>
+    <label class="casilla"><input type="checkbox" name="positivos_son_gastos" value="1" {{ 'checked' if positivos_son_gastos }}>
+      <span>En la columna «Monto», los valores positivos son gastos <span class="sutil">(típico en estados de tarjeta de crédito)</span></span></label>
+    <div class="tabla-desplazable"><table>
+      <thead><tr>{% for t in titulos %}<th>{{ t }}</th>{% endfor %}</tr></thead>
+      <tbody>{% for fila in vista %}<tr>{% for celda in fila %}<td>{{ celda }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+    </table></div>
+    <div class="acciones"><button class="boton" type="submit">Revisar filas</button></div>
+  </form>
+</section>
+{% endblock %}

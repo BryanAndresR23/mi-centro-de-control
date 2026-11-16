@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block titulo %}Importar · Mi Centro de Control{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <h1>Importar estado de cuenta</h1>
+  <a class="boton boton-sec boton-chico" href="/mas">Volver</a>
+</div>
+<section class="tarjeta">
+  <form method="post" action="/importar/analizar" enctype="multipart/form-data" class="formulario">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}">
+    {% if error %}<div class="aviso aviso-error" role="alert">{{ error }}</div>{% endif %}
+    <p class="sutil">Descarga el estado de cuenta de tu banca en línea en CSV o Excel (.xlsx). Después eliges qué columna es la fecha, la descripción y el monto, revisas las filas y confirmas. Las filas que ya importaste antes se detectan y no se duplican.</p>
+    <div class="campo">
+      <label for="cuenta_id">¿De qué cuenta es?</label>
+      <select id="cuenta_id" name="cuenta_id"><option value="">Elige…</option>
+        {% for c in cuentas %}<option value="{{ c.id }}">{{ c.nombre }}</option>{% endfor %}</select>
+    </div>
+    <div class="campo">
+      <label for="archivo">Archivo (.csv o .xlsx)</label>
+      <input id="archivo" name="archivo" type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+    </div>
+    <div class="acciones"><button class="boton" type="submit">Analizar</button></div>
+  </form>
+</section>
+{% endblock %}

@@ -12,8 +12,9 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import Session, joinedload
 
 from ..db import obtener_bd
-from ..finanzas.calculos import CERO
+from ..finanzas.calculos import CERO, categoria_raiz
 from ..finanzas.montos import formato_usd
+from ..finanzas.planificacion import gastado_por_categoria_raiz, umbral_cruzado
 from ..finanzas.servicio import (
     asegurar_categorias_base,
     categorias_frecuentes,
@@ -21,8 +22,11 @@ from ..finanzas.servicio import (
     destino_ahorro_por_defecto,
     listar_categorias,
     listar_cuentas,
+    movs_para_calculo,
+    padre_de,
+    presupuestos_datos,
 )
-from ..models import RUBROS_SRI, TIPOS_AHORRO, Categoria, Cuenta, Movimiento
+from ..models import RUBROS_SRI, TIPOS_AHORRO, Categoria, Cuenta, MetaAhorro, Movimiento
 from ..seguridad import requiere_login, verificar_csrf
 from ..tiempo import hoy, nombre_mes, parse_mes, primer_dia, sumar_meses, ultimo_dia
 from ..web import avisar, es_htmx, render
@@ -149,16 +153,46 @@ def _contexto_formulario(
         "rubros": RUBROS_SRI,
         "hoy": hoy_,
         "ayer": hoy_ - timedelta(days=1),
+        "metas": list(bd.scalars(select(MetaAhorro).where(
+            (MetaAhorro.estado == "activa") | (MetaAhorro.id == (movimiento.meta_id if movimiento else -1))
+        ).order_by(MetaAhorro.orden))),
     }
 
 
-def _valores_iniciales(bd: Session, tipo: str) -> dict:
+def _valores_iniciales(bd: Session, tipo: str, meta: str = "") -> dict:
     return {
         "tipo": tipo,
         "fecha": hoy().isoformat(),
         "cuenta_id": str(cuenta_por_defecto(bd, tipo) or ""),
         "cuenta_destino_ahorro": str(destino_ahorro_por_defecto(bd) or ""),
+        "meta_id": meta if meta.isdigit() else "",
     }
+
+
+def _alerta_presupuesto(request: Request, bd: Session, mov: Movimiento) -> None:
+    """Si este gasto hizo pasar su presupuesto del 80 % o del 100 %, avisa en pantalla."""
+    if mov.tipo != "gasto" or mov.categoria_id is None:
+        return
+    padres = padre_de(bd)
+    raiz = categoria_raiz(mov.categoria_id, padres)
+    vigente = next((p for p in presupuestos_datos(bd)
+                    if p.categoria_id == raiz and p.vigente_en(mov.fecha.year, mov.fecha.month)), None)
+    if vigente is None:
+        return
+    gastado = gastado_por_categoria_raiz(
+        movs_para_calculo(bd), primer_dia(mov.fecha.year, mov.fecha.month), ultimo_dia(mov.fecha.year, mov.fecha.month), padres
+    ).get(raiz, CERO)
+    umbral = umbral_cruzado(gastado - mov.monto, gastado, vigente.monto)
+    if umbral is None:
+        return
+    nombre = bd.get(Categoria, raiz).nombre
+    pct = int(gastado / vigente.monto * 100)
+    if umbral >= 1:
+        avisar(request, f"⛔ Te pasaste del presupuesto de {nombre}: llevas {formato_usd(gastado)} de "
+                        f"{formato_usd(vigente.monto)} ({pct} %).", "alerta")
+    else:
+        avisar(request, f"⚠ Llevas el {pct} % del presupuesto de {nombre}: quedan "
+                        f"{formato_usd(vigente.monto - gastado)} para el mes.", "alerta")
 
 
 def _valores_de_movimiento(mov: Movimiento) -> dict:
@@ -180,6 +214,7 @@ def _valores_de_movimiento(mov: Movimiento) -> dict:
         "ruc_emisor": txt(mov.ruc_emisor),
         "clave_acceso": txt(mov.clave_acceso),
         "deducible": "1" if mov.deducible else "",
+        "meta_id": txt(mov.meta_id),
     }
 
 
@@ -236,6 +271,14 @@ def _leer_y_validar(bd: Session, valores: dict, movimiento: Movimiento | None) -
     datos["ruc_emisor"] = f.solo_digitos(valores, "ruc_emisor", 13, errores)
     datos["clave_acceso"] = f.solo_digitos(valores, "clave_acceso", 49, errores)
     datos["deducible"] = tipo == "gasto" and f.marcado(valores, "deducible")
+    meta_txt = str(valores.get("meta_id") or "")
+    datos["meta_id"] = None
+    if meta_txt.isdigit():
+        meta = bd.get(MetaAhorro, int(meta_txt))
+        if meta is None:
+            errores["meta_id"] = "Esa meta no existe."
+        else:
+            datos["meta_id"] = meta.id
 
     if datos["clave_acceso"]:
         duplicado = bd.scalar(
@@ -254,10 +297,10 @@ def _redirigir_tras_guardar(mov: Movimiento) -> RedirectResponse:
 
 
 @router.get("/nuevo")
-def nuevo(request: Request, tipo: str = "gasto", bd: Session = Depends(obtener_bd)):
+def nuevo(request: Request, tipo: str = "gasto", meta: str = "", bd: Session = Depends(obtener_bd)):
     asegurar_categorias_base(bd)
     tipo = tipo if tipo in TIPOS_FORMULARIO else "gasto"
-    return render(request, "movimientos/form.html", _contexto_formulario(request, bd, _valores_iniciales(bd, tipo)))
+    return render(request, "movimientos/form.html", _contexto_formulario(request, bd, _valores_iniciales(bd, tipo, meta)))
 
 
 @router.post("/nuevo", dependencies=[Depends(verificar_csrf)])
@@ -273,6 +316,7 @@ async def crear(request: Request, bd: Session = Depends(obtener_bd)):
     bd.commit()
     titulo = TITULOS[valores["tipo"]]
     avisar(request, f"{titulo} de {formato_usd(mov.monto)} guardado.")
+    _alerta_presupuesto(request, bd, mov)
     if valores.get("otro") == "1":
         return RedirectResponse(f"/movimientos/nuevo?tipo={valores['tipo']}", status_code=303)
     return _redirigir_tras_guardar(mov)
